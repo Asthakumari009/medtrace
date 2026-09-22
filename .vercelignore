@@ -1,11 +1,24 @@
-# Deploy only the FastAPI service (which includes the doctor share page).
-/*
-!/api
-!/vercel.json
+# The deployment is now two things: the Expo web export (built here by
+# vercel.ts) and the FastAPI service in /api. The old allowlist uploaded ONLY
+# /api, which is why nothing but the API could ever be served.
 
-# Never upload local-only API artifacts.
+# Never upload local-only API artifacts or credentials.
 /api/.venv
 /api/.env
 /api/sa-vertex.json
 /api/__pycache__
 /api/dev_otp.py
+
+# Not app sources.
+/android
+/ios
+/artifacts
+/playwright-report
+/dist
+/.expo
+/tests
+/docs
+/dribble-ref
+/sup
+/build-log.txt
+/build-release.log

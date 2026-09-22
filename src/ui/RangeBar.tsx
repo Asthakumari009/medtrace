@@ -60,7 +60,7 @@ export function RangeBar({ value, low, high, flagged = false }: RangeBarProps) {
           width: `${bandWidth}%`,
           height: 4,
           borderRadius: 2,
-          backgroundColor: colors.sageSoft,
+          backgroundColor: colors.fill,
         }}
       />
       <View
@@ -71,7 +71,7 @@ export function RangeBar({ value, low, high, flagged = false }: RangeBarProps) {
           width: 8,
           height: 8,
           borderRadius: 4,
-          backgroundColor: flagged ? colors.coral : colors.sage,
+          backgroundColor: flagged ? colors.alert : colors.ink,
         }}
       />
     </View>

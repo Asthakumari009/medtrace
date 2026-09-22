@@ -3,7 +3,8 @@ import * as Speech from "expo-speech";
 import { ArrowUp, MessageCircle, Mic, Sparkles, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Keyboard, KeyboardAvoidingView, View } from "react-native";
+import { Keyboard, ScrollView, View } from "react-native";
+import { KeyboardFrame } from "@/ui/KeyboardFrame";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -14,6 +15,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { Brand } from "@/components/health/Primitives";
 import { ChatBubble } from "@/components/ChatBubble";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { type ChatMessage, useChat } from "@/hooks/useChat";
@@ -45,7 +47,7 @@ const MIN_VOICE_MS = 700;
 /** Safety stop so a forgotten recording can't run forever. */
 const MAX_VOICE_MS = 180_000;
 
-/** 1.5s breathing dot while VITA listens (static under reduced motion). */
+/** 1.5s breathing dot while MedTrace listens (static under reduced motion). */
 function ListeningDot() {
   const { colors } = useTheme();
   const reducedMotion = useReducedMotion();
@@ -70,7 +72,7 @@ function ListeningDot() {
   return (
     <Animated.View
       style={[
-        { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.sageBright },
+        { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent },
         style,
       ]}
     />
@@ -163,35 +165,39 @@ export default function ChatScreen() {
   return (
     <Screen tabbed animated={false}>
       {/* Edge-to-edge Android ignores adjustResize, so pad on both platforms. */}
-      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+      <KeyboardFrame>
         <Animated.View entering={enterUp(0)} style={{ paddingTop: 8, paddingBottom: 12 }}>
-          <Text variant="title">{t("chat.title")}</Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><Brand small /><Text variant="caption" tone="soft">{t("chat.title")}</Text></View>
         </Animated.View>
 
         {messages.length === 0 ? (
-          <View style={{ flex: 1, justifyContent: "center", gap: 12 }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: "center", gap: 12, paddingVertical: 12 }}
+            keyboardShouldPersistTaps="handled"
+          >
             <Animated.View
               entering={enterUp(0)}
               style={{
                 width: 72,
                 height: 72,
-                borderRadius: 36,
-                backgroundColor: colors.sageSoft,
+                borderRadius: 20,
+                backgroundColor: colors.fill,
                 alignItems: "center",
                 justifyContent: "center",
-                alignSelf: "center",
+                alignSelf: "flex-start",
                 marginBottom: 4,
               }}
             >
-              <MessageCircle size={32} strokeWidth={1.5} color={colors.sage} />
+              <MessageCircle size={32} strokeWidth={1.5} color={colors.ink} />
             </Animated.View>
             <Animated.View entering={enterUp(1)}>
-              <Text variant="heading" style={{ textAlign: "center" }}>
+              <Text variant="title" style={{ textAlign: "left" }}>
                 {t("chat.emptyTitle")}
               </Text>
             </Animated.View>
-            <Animated.View entering={enterUp(2)} style={{ alignSelf: "center", maxWidth: 300 }}>
-              <Text variant="label" tone="soft" style={{ textAlign: "center", lineHeight: 22 }}>
+            <Animated.View entering={enterUp(2)} style={{ alignSelf: "flex-start", maxWidth: 380 }}>
+              <Text variant="label" tone="soft" style={{ textAlign: "left", lineHeight: 24 }}>
                 {t("chat.emptyBody")}
               </Text>
             </Animated.View>
@@ -207,7 +213,7 @@ export default function ChatScreen() {
                     >
                       <Card rounded="md">
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                          <Sparkles size={16} strokeWidth={1.5} color={colors.sage} />
+                          <Sparkles size={16} strokeWidth={1.5} color={colors.ink} />
                           <Text variant="label" tone="soft" style={{ flex: 1 }}>
                             {suggestion}
                           </Text>
@@ -223,7 +229,7 @@ export default function ChatScreen() {
                 {t("chat.disclaimer")}
               </Text>
             </Animated.View>
-          </View>
+          </ScrollView>
         ) : (
           <FlashList
             ref={listRef}
@@ -250,9 +256,9 @@ export default function ChatScreen() {
 
         {(error !== null || voiceError !== null) && (
           <Animated.View entering={enterUp(0)} style={{ paddingBottom: 8 }}>
-            <Card style={{ backgroundColor: colors.coralSoft, borderColor: "transparent" }}>
+            <Card style={{ backgroundColor: colors.alertSoft, borderColor: "transparent" }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <Text variant="caption" tone="coral" style={{ flex: 1 }}>
+                <Text variant="caption" tone="alert" style={{ flex: 1 }}>
                   {error ?? voiceError}
                 </Text>
                 {error !== null ? (
@@ -261,7 +267,7 @@ export default function ChatScreen() {
                     onPress={retry}
                     style={{ paddingHorizontal: 8, justifyContent: "center" }}
                   >
-                    <Text variant="caption" tone="sage">
+                    <Text variant="caption" tone="accent">
                       {t("common.tryAgain")}
                     </Text>
                   </PressableScale>
@@ -271,7 +277,7 @@ export default function ChatScreen() {
                     onPress={() => setVoiceError(null)}
                     style={{ paddingHorizontal: 8, justifyContent: "center" }}
                   >
-                    <Text variant="caption" tone="sage">
+                    <Text variant="caption" tone="accent">
                       {t("common.gotIt")}
                     </Text>
                   </PressableScale>
@@ -308,7 +314,7 @@ export default function ChatScreen() {
                 flex: 1,
                 height: 52,
                 borderRadius: radius.md,
-                backgroundColor: colors.sageSoft,
+                backgroundColor: colors.fill,
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 10,
@@ -316,7 +322,7 @@ export default function ChatScreen() {
               }}
             >
               <ListeningDot />
-              <Text variant="label" tone="sage" style={{ flex: 1 }}>
+              <Text variant="label" tone="accent" style={{ flex: 1 }}>
                 {t("chat.listening")}
               </Text>
               <Text variant="caption" tone="soft">
@@ -330,13 +336,13 @@ export default function ChatScreen() {
               style={{
                 width: 52,
                 height: 52,
-                borderRadius: radius.md,
-                backgroundColor: colors.sage,
+                borderRadius: radius.pill,
+                backgroundColor: colors.accent,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <ArrowUp size={22} strokeWidth={1.5} color={colors.onSage} />
+              <ArrowUp size={22} strokeWidth={2} color={colors.onAccent} />
             </PressableScale>
           </Animated.View>
         ) : (
@@ -345,6 +351,7 @@ export default function ChatScreen() {
             style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 8 }}
           >
             <Input
+              maxLength={4000}
               value={draft}
               onChangeText={setDraft}
               placeholder={t("chat.placeholder")}
@@ -362,13 +369,13 @@ export default function ChatScreen() {
                 style={{
                   width: 52,
                   height: 52,
-                  borderRadius: radius.md,
-                  backgroundColor: colors.sageSoft,
+                  borderRadius: radius.pill,
+                  backgroundColor: colors.fill,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Mic size={22} strokeWidth={1.5} color={colors.sage} />
+                <Mic size={22} strokeWidth={1.7} color={colors.ink} />
               </PressableScale>
             ) : (
               <PressableScale
@@ -378,22 +385,22 @@ export default function ChatScreen() {
                 style={{
                   width: 52,
                   height: 52,
-                  borderRadius: radius.md,
-                  backgroundColor: canSend ? colors.sage : colors.sageSoft,
+                  borderRadius: radius.pill,
+                  backgroundColor: canSend ? colors.accent : colors.fill,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
                 <ArrowUp
                   size={22}
-                  strokeWidth={1.5}
-                  color={canSend ? colors.onSage : colors.sage}
+                  strokeWidth={2}
+                  color={canSend ? colors.onAccent : colors.inkSoft}
                 />
               </PressableScale>
             )}
           </Animated.View>
         )}
-      </KeyboardAvoidingView>
+      </KeyboardFrame>
     </Screen>
   );
 }

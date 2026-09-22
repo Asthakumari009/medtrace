@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { type ReportRow, type TimelineEventRow } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
@@ -35,45 +35,55 @@ export function useTimeline(): UseTimelineResult {
   const [stats, setStats] = useState<Record<string, ObservationStats>>({});
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async (): Promise<void> => {
-    if (session === null) return;
-
-    const { data: eventRows, error: eventsError } = await supabase
-      .from("timeline_events")
-      .select("*")
-      .order("occurred_at", { ascending: false })
-      .order("created_at", { ascending: false });
-    if (eventsError !== null) {
-      setError(eventsError.message);
-      return;
-    }
-
-    const { data: pendingRows, error: pendingError } = await supabase
-      .from("reports")
-      .select("*")
-      .in("status", ["uploaded", "processing", "failed"])
-      .order("created_at", { ascending: false });
-    if (pendingError !== null) {
-      setError(pendingError.message);
-      return;
-    }
-
-    setError(null);
-    setEvents(eventRows);
-    setPending(pendingRows);
-
-    const { data: observations } = await supabase
-      .from("extracted_observations")
-      .select("report_id, flagged");
-    if (observations !== null) {
-      const next: Record<string, ObservationStats> = {};
-      for (const row of observations) {
-        const entry = (next[row.report_id] ??= { count: 0, flagged: 0 });
-        entry.count += 1;
-        if (row.flagged) entry.flagged += 1;
+  const inFlight = useRef<Promise<void> | null>(null);
+  const refresh = useCallback((): Promise<void> => {
+    if (inFlight.current) return inFlight.current;
+    if (!session) return Promise.resolve();
+    const load = async () => {
+      try {
+        const [eventResult, pendingResult, observationResult] =
+          await Promise.all([
+            supabase
+              .from("timeline_events")
+              .select("*")
+              .eq("user_id", session.user.id)
+              .order("occurred_at", { ascending: false })
+              .order("created_at", { ascending: false }),
+            supabase
+              .from("reports")
+              .select("*")
+              .eq("user_id", session.user.id)
+              .in("status", ["uploaded", "processing", "failed"])
+              .order("created_at", { ascending: false }),
+            supabase
+              .from("extracted_observations")
+              .select("report_id, flagged")
+              .eq("user_id", session.user.id),
+          ]);
+        const failure =
+          eventResult.error ?? pendingResult.error ?? observationResult.error;
+        if (failure) {
+          setError(failure.message);
+          return;
+        }
+        const next: Record<string, ObservationStats> = {};
+        for (const row of observationResult.data ?? []) {
+          const entry = (next[row.report_id] ??= { count: 0, flagged: 0 });
+          entry.count++;
+          if (row.flagged) entry.flagged++;
+        }
+        setEvents(eventResult.data ?? []);
+        setPending(pendingResult.data ?? []);
+        setStats(next);
+        setError(null);
+      } catch {
+        setError("Your records could not be loaded. Please try again.");
       }
-      setStats(next);
-    }
+    };
+    inFlight.current = load().finally(() => {
+      inFlight.current = null;
+    });
+    return inFlight.current;
   }, [session]);
 
   useEffect(() => {
@@ -81,7 +91,9 @@ export function useTimeline(): UseTimelineResult {
   }, [refresh]);
 
   useEffect(() => {
-    const active = pending?.some((r) => r.status === "uploaded" || r.status === "processing");
+    const active = pending?.some(
+      (r) => r.status === "uploaded" || r.status === "processing",
+    );
     if (active !== true) return;
     const timer = setInterval(() => void refresh(), POLL_MS);
     return () => clearInterval(timer);

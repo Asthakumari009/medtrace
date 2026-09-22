@@ -42,6 +42,16 @@ export async function signInWithGoogle(): Promise<"success" | "cancelled"> {
   GoogleSignin.configure({ webClientId: WEB_CLIENT_ID });
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
+  // Clear the locally-cached Google account first. Without this, signIn()
+  // silently re-uses the last account and the chooser never appears, so the
+  // user can't pick a different Gmail. signOut() only drops the native cache —
+  // it doesn't touch the Supabase session.
+  try {
+    await GoogleSignin.signOut();
+  } catch {
+    // No cached account to clear — proceed straight to the picker.
+  }
+
   const response = await GoogleSignin.signIn();
   if (response.type !== "success") return "cancelled";
 

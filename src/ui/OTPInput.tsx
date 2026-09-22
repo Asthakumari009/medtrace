@@ -46,9 +46,9 @@ export function OTPInput({
         {cells.map((digit, i) => {
           const isActive = focused && i === activeIndex && value.length < length;
           const borderColor = invalid
-            ? colors.coral
+            ? colors.alert
             : isActive
-              ? colors.sage
+              ? colors.ink
               : colors.hairline;
           return (
             <Animated.View

@@ -37,14 +37,14 @@ function Dot({ index }: { index: number }) {
   return (
     <Animated.View
       style={[
-        { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.sage },
+        { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.ink },
         style,
       ]}
     />
   );
 }
 
-/** Ambient breathing dots while VITA reads the timeline and answers. */
+/** Thinking dots — bounded to the pending turn, not an ambient loop. */
 export function TypingIndicator() {
   return (
     <View style={{ alignItems: "flex-start" }}>

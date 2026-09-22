@@ -1,15 +1,20 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { ActivityIndicator, View, type StyleProp, type ViewStyle } from "react-native";
+import {
+  ActivityIndicator,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 
 import { PressableScale, type PressableScaleProps } from "./PressableScale";
 import { Text } from "./Text";
-import { liftShadow, radius } from "./theme";
+import { radius } from "./theme";
 import { useTheme } from "./ThemeContext";
 
 type ButtonVariant = "primary" | "secondary" | "ghost";
 type ButtonSize = "md" | "sm";
 
-export interface ButtonProps extends Omit<PressableScaleProps, "children" | "style"> {
+export interface ButtonProps
+  extends Omit<PressableScaleProps, "children" | "style"> {
   title: string;
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -21,8 +26,9 @@ export interface ButtonProps extends Omit<PressableScaleProps, "children" | "sty
 const heightBySize: Record<ButtonSize, number> = { md: 52, sm: 44 };
 
 /**
- * Primary: sage gradient fill with a soft lift. Secondary: surface + hairline.
- * Ghost: bare sage label.
+ * Primary: the acid-lime pill with near-black text — the one loud element on
+ * a screen. Secondary: surface + hairline. Ghost: bare accent label.
+ * Flat fills only, so there is nothing to composite per frame.
  */
 export function Button({
   title,
@@ -34,28 +40,28 @@ export function Button({
   style,
   ...rest
 }: ButtonProps) {
-  const { colors, gradients } = useTheme();
+  const { colors } = useTheme();
   const isDisabled = disabled === true || loading;
-  const labelTone = variant === "primary" ? "onSage" : variant === "ghost" ? "sage" : "ink";
+  const labelTone =
+    variant === "primary" ? "onAccent" : variant === "ghost" ? "accent" : "ink";
 
   const inner = loading ? (
-    <ActivityIndicator size="small" color={variant === "primary" ? colors.onSage : colors.sage} />
+    <ActivityIndicator
+      size="small"
+      color={variant === "primary" ? colors.onAccent : colors.ink}
+    />
   ) : (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
       {icon}
-      <Text variant="label" tone={labelTone}>
+      <Text
+        variant="label"
+        tone={labelTone}
+        style={{ flexShrink: 1, textAlign: "center" }}
+      >
         {title}
       </Text>
     </View>
   );
-
-  const frame: ViewStyle = {
-    height: heightBySize[size],
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  };
 
   return (
     <PressableScale
@@ -63,34 +69,28 @@ export function Button({
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
       style={[
-        { opacity: isDisabled && !loading ? 0.4 : 1, borderRadius: radius.md },
-        variant === "primary" && !isDisabled ? liftShadow : null,
+        {
+          minHeight: heightBySize[size],
+          paddingVertical: 12,
+          paddingHorizontal: 20,
+          borderRadius: radius.pill,
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: isDisabled && !loading ? 0.4 : 1,
+        },
+        variant === "primary" ? { backgroundColor: colors.accent } : null,
         variant === "secondary"
           ? {
               backgroundColor: colors.surface,
               borderWidth: 1,
               borderColor: colors.hairline,
-              ...frame,
-              paddingHorizontal: 20,
             }
           : null,
-        variant === "ghost" ? { ...frame, paddingHorizontal: 20 } : null,
         style,
       ]}
       {...rest}
     >
-      {variant === "primary" ? (
-        <LinearGradient
-          colors={gradients.primary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[frame, { paddingHorizontal: 20, alignSelf: "stretch" }]}
-        >
-          {inner}
-        </LinearGradient>
-      ) : (
-        inner
-      )}
+      {inner}
     </PressableScale>
   );
 }

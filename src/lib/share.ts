@@ -1,41 +1,51 @@
 import { API_URL, fetchWithTimeout } from "./http";
 import { supabase } from "./supabase";
-
 export interface ShareGrant {
-  shareUrl: string;
-  expiresAt: string;
+  id: string;
+  share_url: string;
+  expires_at: string;
+  report_count: number;
+  recipient_label: string;
 }
-
-/**
- * Mint a single-use 30-minute doctor share. The server revokes any previous
- * active share, so the newest QR is always the only live one.
- */
-export async function createShare(): Promise<ShareGrant> {
+export interface ShareHistory extends Omit<ShareGrant, "share_url"> {
+  created_at: string;
+  opened_at: string | null;
+  revoked_at: string | null;
+  legacy: boolean;
+}
+export interface ShareOptions {
+  report_ids: string[];
+  recipient_label: string;
+  duration_minutes: number;
+}
+async function request<T>(path: string, body?: unknown): Promise<T> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
-  if (token === undefined) throw new Error("Not signed in");
-
+  if (!token) throw new Error("Sign in to manage access.");
   const response = await fetchWithTimeout(
-    `${API_URL}/share`,
+    `${API_URL}${path}`,
     {
-      method: "POST",
-      headers: { authorization: `Bearer ${token}` },
+      method: body === undefined ? "GET" : "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     },
     20_000,
   );
-  if (!response.ok) {
-    throw new Error(`Share request failed (${response.status})`);
-  }
-  const body = (await response.json()) as { share_url: string; expires_at: string };
-  return { shareUrl: body.share_url, expiresAt: body.expires_at };
+  if (!response.ok)
+    throw new Error(
+      `Access request failed (${response.status}). Please try again.`,
+    );
+  return response.json() as Promise<T>;
 }
-
-/** Revoke every still-active share for this user (RLS-scoped update). */
-export async function revokeShares(): Promise<void> {
-  const { error } = await supabase
-    .from("share_tokens")
-    .update({ revoked_at: new Date().toISOString() })
-    .is("used_at", null)
-    .is("revoked_at", null);
-  if (error !== null) throw new Error(error.message);
-}
+export const createShare = (options: ShareOptions) =>
+  request<ShareGrant>("/share", options);
+export const listShares = () => request<{ shares: ShareHistory[] }>("/shares");
+/** Server-time revocation includes opened grants. Only resolve after acknowledgement. */
+export const revokeShares = (shareId?: string) =>
+  request<{ revoked: number; acknowledged_at: string }>(
+    "/share/revoke",
+    shareId ? { share_id: shareId } : {},
+  );

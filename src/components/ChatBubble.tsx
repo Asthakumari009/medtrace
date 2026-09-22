@@ -11,7 +11,7 @@ export interface ChatBubbleProps {
 }
 
 /**
- * One chat turn. User messages sit right in a soft sage bubble; VITA's
+ * One chat turn. User messages sit right on a neutral fill; MedTrace's
  * answers sit left on a surface card, with tappable report citations.
  */
 export function ChatBubble({ message }: ChatBubbleProps) {
@@ -25,7 +25,7 @@ export function ChatBubble({ message }: ChatBubbleProps) {
         <View
           style={{
             maxWidth: "82%",
-            backgroundColor: colors.sageSoft,
+            backgroundColor: colors.fill,
             borderRadius: radius.md,
             borderBottomRightRadius: radius.sm / 2,
             paddingHorizontal: 14,
@@ -61,14 +61,14 @@ export function ChatBubble({ message }: ChatBubbleProps) {
                     flexDirection: "row",
                     alignItems: "center",
                     gap: 6,
-                    backgroundColor: colors.sageSoft,
+                    backgroundColor: colors.fill,
                     borderRadius: radius.sm,
                     paddingHorizontal: 10,
                     paddingVertical: 4,
                   }}
                 >
-                  <FileText size={14} strokeWidth={1.5} color={colors.sage} />
-                  <Text variant="caption" tone="sage" numberOfLines={1} style={{ maxWidth: 200 }}>
+                  <FileText size={14} strokeWidth={1.5} color={colors.ink} />
+                  <Text variant="caption" tone="accent" numberOfLines={1} style={{ maxWidth: 200 }}>
                     {citation.title}
                   </Text>
                 </PressableScale>

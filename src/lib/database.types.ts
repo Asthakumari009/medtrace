@@ -20,6 +20,8 @@ export type HealthMetric =
   | "hrv"
   | "active_energy";
 export type ReportStatus = "uploaded" | "processing" | "processed" | "failed";
+/** Where the document was read. "on_device_ocr" means no file was uploaded. */
+export type ExtractionSource = "cloud" | "on_device_ocr";
 export type TimelineEventType = "report" | "pattern" | "symptom";
 export type ProfileSex = "female" | "male" | "other" | "undisclosed";
 
@@ -59,9 +61,11 @@ export interface Database {
           user_id: string;
           title: string;
           report_date: string | null;
-          file_path: string;
+          /** Null when the report was read on-device — no file was uploaded. */
+          file_path: string | null;
           file_type: ReportFileType;
           status: ReportStatus;
+          extraction_source: ExtractionSource;
           error_message: string | null;
           created_at: string;
           updated_at: string;
@@ -71,9 +75,10 @@ export interface Database {
           user_id: string;
           title?: string;
           report_date?: string | null;
-          file_path: string;
+          file_path: string | null;
           file_type: ReportFileType;
           status?: ReportStatus;
+          extraction_source?: ExtractionSource;
           error_message?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -83,9 +88,10 @@ export interface Database {
           user_id?: string;
           title?: string;
           report_date?: string | null;
-          file_path?: string;
+          file_path?: string | null;
           file_type?: ReportFileType;
           status?: ReportStatus;
+          extraction_source?: ExtractionSource;
           error_message?: string | null;
           created_at?: string;
           updated_at?: string;

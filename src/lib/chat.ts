@@ -20,7 +20,7 @@ export interface ChatReply {
 }
 
 export interface VoiceReply extends ChatReply {
-  /** What VITA heard — shown as the user's bubble. Empty if unintelligible. */
+  /** What MedTrace heard — shown as the user's bubble. Empty if unintelligible. */
   transcript: string;
 }
 
@@ -38,7 +38,7 @@ export async function sendChat(messages: ChatTurn[]): Promise<ChatReply> {
     },
     // The user's language preference rides on every AI call so answers,
     // insights, and report explanations come back in their language.
-    body: JSON.stringify({ messages, language: currentLanguage() }),
+    body: JSON.stringify({ messages: messages.slice(-30), language: currentLanguage() }),
   }, 45_000);
   if (!response.ok) {
     throw new Error(`Chat request failed (${response.status})`);
@@ -62,7 +62,7 @@ export async function sendVoiceChat(audioUri: string, history: ChatTurn[]): Prom
     name: "voice.m4a",
     type: "audio/mp4",
   } as unknown as Blob);
-  form.append("history", JSON.stringify(history));
+  form.append("history", JSON.stringify(history.slice(-30)));
   form.append("language", currentLanguage());
 
   // Upload + transcription + answer can legitimately take a while.

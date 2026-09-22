@@ -1,3 +1,25 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/*
+ * Web-only baseline. The app styles itself through src/ui/theme.ts; this file
+ * exists for the two things a stylesheet does better on the web export.
+ */
+
+/* Non-essential motion is reduced to nothing, not merely slowed down. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Keyboard focus must stay visible on every theme. */
+:focus-visible {
+  outline: 2px solid #5a6b00;
+  outline-offset: 4px;
+}
+@media (prefers-color-scheme: dark) {
+  :focus-visible {
+    outline-color: #d8ff3e;
+  }
+}

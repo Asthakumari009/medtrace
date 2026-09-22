@@ -71,7 +71,7 @@ export default function EmailScreen() {
           </Animated.View>
           {error !== null && (
             <Animated.View entering={enterUp(0)}>
-              <Text variant="caption" tone="coral">
+              <Text variant="caption" tone="alert">
                 {error}
               </Text>
             </Animated.View>

@@ -1,12 +1,4 @@
-import { useEffect } from "react";
-import { type DimensionValue } from "react-native";
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from "react-native-reanimated";
+import { View, type DimensionValue } from "react-native";
 
 import { radius } from "./theme";
 import { useTheme } from "./ThemeContext";
@@ -17,33 +9,27 @@ export interface SkeletonProps {
   rounded?: keyof typeof radius;
 }
 
-/** Loading placeholder with the 1.5s ambient breathing pulse. */
-export function Skeleton({ width = "100%", height = 16, rounded = "sm" }: SkeletonProps) {
+/**
+ * Loading placeholder. Deliberately static: a list renders a dozen of these
+ * at once, and a dozen infinite opacity loops keep the UI thread and GPU
+ * awake for as long as the screen is open. The shape alone reads as loading.
+ */
+export function Skeleton({
+  width = "100%",
+  height = 16,
+  rounded = "sm",
+}: SkeletonProps) {
   const { colors } = useTheme();
-  const pulse = useSharedValue(0.45);
-
-  useEffect(() => {
-    pulse.value = withRepeat(
-      withTiming(1, { duration: 750, easing: Easing.inOut(Easing.quad) }),
-      -1,
-      true,
-    );
-  }, [pulse]);
-
-  const animatedStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
-
   return (
-    <Animated.View
+    <View
       accessibilityElementsHidden
-      style={[
-        {
-          width,
-          height,
-          borderRadius: radius[rounded],
-          backgroundColor: colors.fill,
-        },
-        animatedStyle,
-      ]}
+      importantForAccessibility="no-hide-descendants"
+      style={{
+        width,
+        height,
+        borderRadius: radius[rounded],
+        backgroundColor: colors.fill,
+      }}
     />
   );
 }

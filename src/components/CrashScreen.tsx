@@ -32,13 +32,13 @@ function CrashBody({ retry }: { retry: ErrorBoundaryProps["retry"] }) {
           width: 72,
           height: 72,
           borderRadius: 36,
-          backgroundColor: colors.sageSoft,
+          backgroundColor: colors.fill,
           alignItems: "center",
           justifyContent: "center",
           marginBottom: 6,
         }}
       >
-        <HeartPulse size={32} strokeWidth={1.5} color={colors.sage} />
+        <HeartPulse size={32} strokeWidth={1.5} color={colors.ink} />
       </View>
       <Text variant="heading" style={{ textAlign: "center" }}>
         {t("crash.title", "Something went wrong")}

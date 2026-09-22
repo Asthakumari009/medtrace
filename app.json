@@ -1,82 +1,84 @@
 {
   "expo": {
-    "name": "VITA",
+    "name": "MedTrace",
     "slug": "vita",
     "version": "1.0.0",
     "scheme": "vita",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
       "bundleIdentifier": "com.vita.health"
     },
     "android": {
       "package": "com.vita.health",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#FAFAF8",
+        "backgroundColor": "#0A0B0A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.health.READ_HEART_RATE",
-        "android.permission.health.READ_SLEEP",
-        "android.permission.health.READ_STEPS",
-        "android.permission.health.READ_OXYGEN_SATURATION",
-        "android.permission.health.READ_HEART_RATE_VARIABILITY",
-        "android.permission.health.READ_ACTIVE_CALORIES_BURNED"
-      ]
+      "predictiveBackGestureEnabled": true,
+      "allowBackup": false,
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "asyncRoutes": {
+            "web": "production",
+            "default": false
+          }
+        }
+      ],
       "expo-font",
       [
         "expo-image-picker",
         {
-          "cameraPermission": "VITA uses the camera to photograph medical reports you choose to add.",
-          "photosPermission": "VITA accesses photos you select to add medical reports."
+          "cameraPermission": "MedTrace uses the camera to photograph medical reports you choose to add. The photo is read on this device.",
+          "photosPermission": "MedTrace accesses photos you select to add medical reports."
         }
       ],
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FAFAF8",
+          "backgroundColor": "#F4F5F1",
           "image": "./assets/splash-icon.png",
-          "imageWidth": 160
+          "imageWidth": 160,
+          "dark": {
+            "backgroundColor": "#0A0B0A"
+          }
         }
       ],
-      "expo-background-task",
-      [
-        "@kingstinct/react-native-healthkit",
-        {
-          "NSHealthShareUsageDescription": "VITA reads heart rate, sleep, steps, blood oxygen, HRV, and active energy to learn your personal baseline and show meaningful changes. Nothing is shared without your action.",
-          "NSHealthUpdateUsageDescription": false
-        }
-      ],
-      "./plugins/withHealthConnect",
       "expo-localization",
       [
         "expo-audio",
         {
-          "microphonePermission": "VITA uses the microphone so you can ask about your health by voice."
+          "microphonePermission": "MedTrace uses the microphone so you can ask about your records by voice."
         }
       ],
       [
         "expo-build-properties",
         {
           "android": {
-            "minSdkVersion": 26
+            "minSdkVersion": 26,
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "enableBundleCompression": true,
+            "usesCleartextTraffic": false
           }
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "expo-secure-store",
+      "expo-asset",
+      "expo-status-bar"
     ]
   }
 }

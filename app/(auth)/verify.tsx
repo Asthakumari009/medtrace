@@ -77,7 +77,7 @@ export default function VerifyScreen() {
           <View style={{ minHeight: 24, marginTop: 4 }}>
             {error !== null && (
               <Animated.View entering={enterUp(0)}>
-                <Text variant="caption" tone="coral" style={{ textAlign: "center" }}>
+                <Text variant="caption" tone="alert" style={{ textAlign: "center" }}>
                   {error}
                 </Text>
               </Animated.View>
@@ -101,7 +101,7 @@ export default function VerifyScreen() {
               onPress={() => void resend()}
               style={{ paddingHorizontal: 16, justifyContent: "center" }}
             >
-              <Text variant="label" tone="sage">
+              <Text variant="label" tone="accent">
                 {t("auth.resend")}
               </Text>
             </PressableScale>

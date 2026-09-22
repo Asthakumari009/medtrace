@@ -1,12 +1,18 @@
 import * as Haptics from "expo-haptics";
-import { Pressable, type PressableProps, type ViewStyle, type StyleProp } from "react-native";
+import {
+  Platform,
+  Pressable,
+  type PressableProps,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 
-import { SPRING } from "./theme";
+import { DUR, EASE_OUT } from "./theme";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -17,8 +23,9 @@ export interface PressableScaleProps extends Omit<PressableProps, "style"> {
 }
 
 /**
- * The house press behavior: scale to 0.97 on the spring with a light
- * haptic tick, spring back on release. Minimum 44pt touch target.
+ * The house press behavior: 0.98 on a 110ms decelerating curve with a light
+ * haptic tick, back to rest on release. A press acknowledges the touch — it
+ * does not squish, and it does not bounce back. Minimum 44pt touch target.
  */
 export function PressableScale({
   style,
@@ -39,17 +46,34 @@ export function PressableScale({
       hitSlop={4}
       style={[{ minHeight: 44, minWidth: 44 }, animatedStyle, style]}
       onPressIn={(e) => {
-        scale.value = withSpring(0.97, SPRING);
+        scale.value = withTiming(0.98, { duration: DUR.fast, easing: EASE_OUT });
         if (haptic) {
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
+            () => undefined,
+          );
         }
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        scale.value = withSpring(1, SPRING);
+        scale.value = withTiming(1, { duration: DUR.fast, easing: EASE_OUT });
         onPressOut?.(e);
       }}
       {...rest}
+      {...(Platform.OS === "web"
+        ? {
+            "aria-selected":
+              rest.accessibilityRole === "tab"
+                ? rest.accessibilityState?.selected
+                : undefined,
+            "aria-pressed":
+              rest.accessibilityRole !== "tab"
+                ? rest.accessibilityState?.selected
+                : undefined,
+            "aria-checked": rest.accessibilityState?.checked,
+            "aria-expanded": rest.accessibilityState?.expanded,
+            "aria-busy": rest.accessibilityState?.busy,
+          }
+        : {})}
     />
   );
 }

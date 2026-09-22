@@ -1,120 +1,95 @@
-import { Platform, type TextStyle, type ViewStyle } from "react-native";
+import { Easing, Platform, type TextStyle, type ViewStyle } from "react-native";
 
 /**
- * VITA design tokens v3 — "Living Bloom".
- * Calm clinical trust with a living centerpiece: deep forest heroes, luminous
- * sage gradients, one disciplined gold accent — now in light and dark. Every
- * color, size, radius, gradient, and spring in the app resolves through
- * useTheme(); nothing outside this file defines a value.
+ * MedTrace design tokens v4 — "Record".
+ *
+ * Near-black canvas, flat surfaces, one acid-lime accent, tight geometric
+ * type, and numbers as the hero element. Flat by design: no gradients, no
+ * blur, no overshoot. Every color, size, radius, duration, and easing in the
+ * app resolves through useTheme() or this file; nothing outside it defines a
+ * value.
+ *
+ * The register is also the cheapest thing to render on a mid-range Android
+ * device, which is why it is the register.
  */
 
 export type ColorScheme = "light" | "dark";
 
+/** Bone canvas, white cards, one inverted near-black panel per screen. */
 const lightColors = {
   // Canvas
-  bg: "#F6F7F3",
-  bgDeep: "#EDF0E9",
+  bg: "#F4F5F1",
+  bgDeep: "#E9EBE4",
   surface: "#FFFFFF",
-  glass: "rgba(255,255,255,0.78)",
+
+  /** The inverted panel — near-black card on the light canvas. One per screen. */
+  surfaceHi: "#101210",
+  onSurfaceHi: "#F5F7F2",
+  onSurfaceHiSoft: "rgba(245,247,242,0.62)",
+  onSurfaceHiFaint: "rgba(245,247,242,0.40)",
+
+  /**
+   * Acid lime. A FILL ONLY — always paired with onAccent text, never used as
+   * a text or icon color on bg/surface (it fails contrast there). Budget:
+   * one element per screen.
+   */
+  accent: "#C8F02A",
+  accentSoft: "rgba(200,240,42,0.16)",
+  /** Text-safe lime for accent labels and icons: 5.9:1 on white. */
+  accentInk: "#5A6B00",
+  onAccent: "#0F1200",
 
   // Ink
-  ink: "#16181C",
-  inkSoft: "rgba(22,24,28,0.56)",
-  inkFaint: "rgba(22,24,28,0.34)",
+  ink: "#101210",
+  inkSoft: "rgba(16,18,16,0.62)",
+  inkFaint: "rgba(16,18,16,0.58)",
 
-  // Sage — the brand
-  sage: "#578A6C",
-  sageBright: "#7DB18F",
-  sageDeep: "#33523F",
-  sageSoft: "rgba(87,138,108,0.12)",
+  /** Abnormal lab values and errors only. 5.3:1 on white. */
+  alert: "#C43A1C",
+  alertSoft: "rgba(196,58,28,0.10)",
+  /** In-range / success. 5.3:1 on white. */
+  ok: "#1F7A48",
 
-  // Forest — dark hero surfaces
-  forest: "#1B2A21",
-  forestSoft: "#26392D",
-  onForest: "#F2F5F0",
-  onForestSoft: "rgba(242,245,240,0.62)",
-  onForestFaint: "rgba(242,245,240,0.34)",
-
-  // Gold — premium accent, used sparingly (patterns, highlights).
-  // Text-safe on white (≥4.5:1); rich gold lives in gradients.gold.
-  gold: "#97702B",
-  goldSoft: "rgba(194,151,78,0.14)",
-
-  // Coral — alerts ONLY. Text-safe on white; soft tint carries the warmth.
-  coral: "#C14F36",
-  coralSoft: "rgba(232,130,107,0.12)",
-
-  hairline: "rgba(22,24,28,0.07)",
-  /** Neutral fill for skeletons, off-toggle tracks, quiet wells. */
-  fill: "rgba(22,24,28,0.06)",
+  hairline: "rgba(16,18,16,0.09)",
+  /** Neutral fill for icon chips, skeletons, off-toggle tracks, quiet wells. */
+  fill: "rgba(16,18,16,0.05)",
   /** Backdrop behind sheets and overlays. */
-  scrim: "rgba(20,31,24,0.38)",
-  onSage: "#FFFFFF",
-};
+  scrim: "rgba(10,11,10,0.44)",
+} as const;
 
 export type ColorPalette = { readonly [K in keyof typeof lightColors]: string };
 
-/** Forest night — the serene dark canvas. Same hues, lifted for contrast. */
+/** The primary scheme: near-black canvas, white inverted cards, same lime. */
 const darkColors: ColorPalette = {
-  bg: "#0F1411",
-  bgDeep: "#0A0E0B",
-  surface: "#181F1A",
-  glass: "rgba(24,31,26,0.78)",
+  bg: "#0A0B0A",
+  bgDeep: "#000000",
+  surface: "#16181A",
 
-  ink: "#F2F5F0",
-  inkSoft: "rgba(242,245,240,0.64)",
-  inkFaint: "rgba(242,245,240,0.40)",
+  /** Inverted here means white — the bright tiles in the reference. */
+  surfaceHi: "#FFFFFF",
+  onSurfaceHi: "#101210",
+  onSurfaceHiSoft: "rgba(16,18,16,0.64)",
+  onSurfaceHiFaint: "rgba(16,18,16,0.44)",
 
-  sage: "#7DB18F",
-  sageBright: "#93C7A6",
-  sageDeep: "#C4DCCD",
-  sageSoft: "rgba(125,177,143,0.16)",
+  accent: "#D8FF3E",
+  accentSoft: "rgba(216,255,62,0.14)",
+  /** On dark the lime is already text-safe (15.6:1 on surface). */
+  accentInk: "#D8FF3E",
+  onAccent: "#0F1200",
 
-  forest: "#1E2F25",
-  forestSoft: "#2A4435",
-  onForest: "#F2F5F0",
-  onForestSoft: "rgba(242,245,240,0.62)",
-  onForestFaint: "rgba(242,245,240,0.34)",
+  ink: "#F5F7F2",
+  inkSoft: "rgba(245,247,242,0.60)",
+  inkFaint: "rgba(245,247,242,0.50)",
 
-  gold: "#D8B26E",
-  goldSoft: "rgba(216,178,110,0.18)",
+  /** 6.4:1 on surface. */
+  alert: "#FF6B4A",
+  alertSoft: "rgba(255,107,74,0.14)",
+  /** 11.9:1 on surface. */
+  ok: "#7FE7A4",
 
-  coral: "#F09780",
-  coralSoft: "rgba(240,151,128,0.16)",
-
-  hairline: "rgba(242,245,240,0.09)",
-  fill: "rgba(242,245,240,0.08)",
-  scrim: "rgba(5,8,6,0.52)",
-  onSage: "#FFFFFF",
-};
-
-export interface GradientSet {
-  /** Sage brand fill — primary buttons, key affordances. */
-  primary: readonly [string, string];
-  /** Forest hero card. */
-  hero: readonly [string, string];
-  /** Gold — "your body's patterns" moments only. */
-  gold: readonly [string, string];
-  /** Ambient background orbs. */
-  orbSage: readonly [string, string];
-  orbGold: readonly [string, string];
-}
-
-/** Two-stop gradients. Always top-left → bottom-right unless stated. */
-const lightGradients: GradientSet = {
-  primary: ["#6CA483", "#3F7257"],
-  hero: ["#243B2E", "#141F18"],
-  gold: ["#D6B375", "#B68B41"],
-  orbSage: ["rgba(125,177,143,0.32)", "rgba(125,177,143,0)"],
-  orbGold: ["rgba(214,179,117,0.20)", "rgba(214,179,117,0)"],
-};
-
-const darkGradients: GradientSet = {
-  primary: ["#5E9678", "#35624A"],
-  hero: ["#2C4736", "#131D16"],
-  gold: ["#CBA968", "#A87F3D"],
-  orbSage: ["rgba(125,177,143,0.20)", "rgba(125,177,143,0)"],
-  orbGold: ["rgba(214,179,117,0.12)", "rgba(214,179,117,0)"],
+  hairline: "rgba(245,247,242,0.10)",
+  fill: "rgba(245,247,242,0.06)",
+  scrim: "rgba(0,0,0,0.62)",
 };
 
 export const palettes: Record<ColorScheme, ColorPalette> = {
@@ -122,24 +97,21 @@ export const palettes: Record<ColorScheme, ColorPalette> = {
   dark: darkColors,
 };
 
-export const gradientSets: Record<ColorScheme, GradientSet> = {
-  light: lightGradients,
-  dark: darkGradients,
-};
-
 export const typeScale = {
-  caption: 13,
-  label: 15,
-  body: 17,
-  heading: 22,
-  title: 28,
-  display: 34,
+  eyebrow: 11,
+  caption: 12,
+  label: 14,
+  body: 16,
+  heading: 20,
+  title: 30,
+  display: 44,
 } as const;
 
 export const radius = {
-  sm: 14,
-  md: 20,
-  lg: 28,
+  sm: 12,
+  md: 18,
+  lg: 26,
+  pill: 999,
 } as const;
 
 export const space = (n: number): number => n * 4;
@@ -150,66 +122,55 @@ export const SCREEN_PADDING = 20;
  * Floating tab bar geometry. Screen's tabbed clearance derives from these so
  * scrollable content always ends tab-bar height + 16 above the screen bottom.
  */
-export const TAB_BAR_HEIGHT = 64;
+export const TAB_BAR_HEIGHT = 62;
 /** Gap between the tab bar and the home indicator / safe-area edge. */
 export const TAB_BAR_OFFSET = 12;
 
-/** The one spring. Layout, entrances, presses — everything moves with this. */
-export const SPRING = { damping: 18, stiffness: 180 } as const;
+/**
+ * Durations, in ms. Nothing in the app animates for longer than `slow`.
+ * There is no spring: the house motion decelerates to rest and never
+ * overshoots. Presses acknowledge, they do not squish.
+ */
+export const DUR = { fast: 110, base: 180, slow: 260 } as const;
 
-export const STAGGER_MS = 40;
+/** Decelerate to rest. The default for entrances, presses, and layout. */
+export const EASE_OUT = Easing.bezier(0.22, 1, 0.36, 1);
+/** Symmetric, for things that move and come back (sheets, toggles). */
+export const EASE_IN_OUT = Easing.bezier(0.4, 0, 0.2, 1);
 
-/** Ambient loops (live dots, the Bloom's breath) share one calm cycle. */
-export const BREATH_MS = 3200;
+export const STAGGER_MS = 30;
 
-/** Soft ambient shadow for resting cards. */
-export const ambientShadow: ViewStyle = Platform.select<ViewStyle>({
-  ios: {
-    shadowColor: "#1B2A21",
-    shadowOpacity: 0.07,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  default: {
-    elevation: 3,
-    shadowColor: "#1B2A21",
-  },
-});
+/** Digits must not jitter. Every metric, lab value, and chart label uses this. */
+export const tabularNums: TextStyle = { fontVariant: ["tabular-nums"] };
 
-/** Deeper lift for hero surfaces and floating elements. */
+/**
+ * One elevation, on the two surfaces that genuinely float (tab bar, sheet).
+ * Everywhere else a 1px hairline does the job for free — stacked Android
+ * elevation is extra draw passes, and the reference design uses borders.
+ */
 export const liftShadow: ViewStyle = Platform.select<ViewStyle>({
   ios: {
-    shadowColor: "#141F18",
-    shadowOpacity: 0.16,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 12 },
+    shadowColor: "#000000",
+    shadowOpacity: 0.22,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
   },
-  default: {
-    elevation: 8,
-    shadowColor: "#141F18",
-  },
+  default: { elevation: 8, shadowColor: "#000000" },
 });
 
-type FontWeight = "regular" | "medium" | "semibold" | "bold";
+type FontWeight = "regular" | "medium" | "semibold";
 
-const interFamily: Record<FontWeight, string> = {
-  regular: "Inter_400Regular",
-  medium: "Inter_500Medium",
-  semibold: "Inter_600SemiBold",
-  bold: "Inter_700Bold",
+/** Geist — geometric grotesk. Three weights; nothing else is loaded. */
+const geist: Record<FontWeight, string> = {
+  regular: "Geist_400Regular",
+  medium: "Geist_500Medium",
+  semibold: "Geist_600SemiBold",
 };
 
-const iosWeight: Record<FontWeight, TextStyle["fontWeight"]> = {
-  regular: "400",
-  medium: "500",
-  semibold: "600",
-  bold: "700",
-};
-
-/** SF Pro (system) on iOS, Inter elsewhere. */
 export function fontStyle(weight: FontWeight): TextStyle {
-  if (Platform.OS === "ios") {
-    return { fontWeight: iosWeight[weight] };
-  }
-  return { fontFamily: interFamily[weight] };
+  return { fontFamily: geist[weight] };
 }
+
+/** Keep scroll content clear of navigation at larger system text sizes. */
+export const scaledTabBarHeight = (fontScale: number) =>
+  TAB_BAR_HEIGHT + 4 + Math.max(0, (fontScale - 1) * 36);

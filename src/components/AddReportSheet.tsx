@@ -1,6 +1,7 @@
 import { Camera, FileUp, Images, type LucideIcon } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
+import { useEffect, useRef, useState } from "react";
 
 import {
   pickDocument,
@@ -8,7 +9,8 @@ import {
   pickFromLibrary,
   type PickedFile,
 } from "@/lib/reports";
-import { PressableScale, Sheet, Text, useTheme } from "@/ui";
+import { onDeviceOcrAvailable } from "@/lib/ocr";
+import { PressableScale, radius, Sheet, Text, useTheme } from "@/ui";
 
 export interface AddReportSheetProps {
   visible: boolean;
@@ -44,13 +46,41 @@ const options: SourceOption[] = [
   },
 ];
 
-export function AddReportSheet({ visible, onClose, onPicked }: AddReportSheetProps) {
+export function AddReportSheet({
+  visible,
+  onClose,
+  onPicked,
+}: AddReportSheetProps) {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const onDevice = onDeviceOcrAvailable();
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const picking = useRef(false);
+  useEffect(() => {
+    if (visible) setError(null);
+  }, [visible]);
   const handle = async (option: SourceOption): Promise<void> => {
-    const file = await option.pick();
-    onClose();
-    if (file !== null) onPicked(file);
+    if (picking.current) return;
+    picking.current = true;
+    setBusy(true);
+    setError(null);
+    try {
+      const file = await option.pick();
+      if (file !== null) {
+        onClose();
+        onPicked(file);
+      }
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "The file picker could not open. Please try again.",
+      );
+    } finally {
+      picking.current = false;
+      setBusy(false);
+    }
   };
 
   return (
@@ -63,28 +93,29 @@ export function AddReportSheet({ visible, onClose, onPicked }: AddReportSheetPro
               key={option.labelKey}
               accessibilityLabel={t(option.labelKey)}
               onPress={() => void handle(option)}
+              disabled={busy}
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 12,
                 padding: 12,
-                borderRadius: 16,
+                borderRadius: radius.md,
                 borderWidth: 1,
                 borderColor: colors.hairline,
-                backgroundColor: colors.bg,
+                backgroundColor: colors.surface,
               }}
             >
               <View
                 style={{
                   width: 44,
                   height: 44,
-                  borderRadius: 22,
-                  backgroundColor: colors.sageSoft,
+                  borderRadius: radius.sm,
+                  backgroundColor: colors.fill,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Icon size={20} strokeWidth={1.5} color={colors.sage} />
+                <Icon size={20} strokeWidth={1.5} color={colors.ink} />
               </View>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text variant="label">{t(option.labelKey)}</Text>
@@ -96,8 +127,25 @@ export function AddReportSheet({ visible, onClose, onPicked }: AddReportSheetPro
           );
         })}
       </View>
-      <Text variant="caption" tone="faint" style={{ marginTop: 16, textAlign: "center" }}>
-        {t("addReport.footer")}
+      {error && (
+        <Text
+          accessibilityRole="alert"
+          variant="caption"
+          tone="alert"
+          style={{ marginTop: 12 }}
+        >
+          {error}
+        </Text>
+      )}
+      {/* Stated only when this build can actually honour it. */}
+      <Text
+        variant="caption"
+        tone="soft"
+        style={{ marginTop: 16, lineHeight: 18 }}
+      >
+        {onDevice
+          ? "Photos are read here on your phone — only the extracted text is sent to be structured. PDFs are uploaded and read in the cloud."
+          : t("addReport.footer")}
       </Text>
     </Sheet>
   );

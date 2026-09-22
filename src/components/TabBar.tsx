@@ -1,135 +1,141 @@
-import { BlurView } from "expo-blur";
+import { type ComponentProps } from "react";
 import { type Tabs } from "expo-router";
-import { HeartPulse, MessageCircle, UserRound, type LucideIcon } from "lucide-react-native";
-import { type ComponentProps, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { View } from "react-native";
-import Animated, { useAnimatedStyle, withSpring } from "react-native-reanimated";
+import {
+  FileText,
+  House,
+  MessageSquare,
+  UserRound,
+} from "lucide-react-native";
+import { View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
+  liftShadow,
   PressableScale,
   radius,
-  SCREEN_PADDING,
-  SPRING,
-  TAB_BAR_HEIGHT,
+  scaledTabBarHeight,
   TAB_BAR_OFFSET,
   Text,
   useTheme,
 } from "@/ui";
 
-type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[0];
+import type { Destination } from "./health/Experience";
 
-const INDICATOR_INSET = 8;
-
-const tabConfig: Record<string, { icon: LucideIcon; labelKey: string }> = {
-  index: { icon: HeartPulse, labelKey: "tabs.home" },
-  chat: { icon: MessageCircle, labelKey: "tabs.chat" },
-  profile: { icon: UserRound, labelKey: "tabs.you" },
-};
+const ITEMS = [
+  { key: "home", route: "index", label: "Home", icon: House },
+  { key: "records", route: "records", label: "Documents", icon: FileText },
+  { key: "chat", route: "chat", label: "Ask", icon: MessageSquare },
+  { key: "profile", route: "profile", label: "You", icon: UserRound },
+] as const;
 
 /**
- * Floating blur pill tab bar. A soft sage indicator springs between
- * tabs; each tap scales 0.97 with a light haptic.
+ * Floating pill bar. The active tab is a solid lime chip with near-black
+ * glyph and label — the one loud element, and the same accent the primary
+ * action uses everywhere else.
  */
-export function TabBar({ state, descriptors, navigation }: TabBarProps) {
+export function BottomNavigation({
+  selected,
+  onNavigate,
+}: {
+  selected: Destination;
+  onNavigate: (destination: Destination) => void;
+}) {
   const insets = useSafeAreaInsets();
-  const { colors, scheme } = useTheme();
-  const { t } = useTranslation();
-  const [barWidth, setBarWidth] = useState(0);
-
-  const tabWidth = barWidth > 0 ? barWidth / state.routes.length : 0;
-
-  const indicatorStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: withSpring(state.index * tabWidth + INDICATOR_INSET, SPRING) },
-    ],
-  }));
+  const { fontScale } = useWindowDimensions();
+  const { colors } = useTheme();
 
   return (
     <View
       pointerEvents="box-none"
       style={{
         position: "absolute",
-        left: SCREEN_PADDING,
-        right: SCREEN_PADDING,
+        left: Math.max(16, insets.left),
+        right: Math.max(16, insets.right),
         bottom: insets.bottom + TAB_BAR_OFFSET,
+        alignItems: "center",
       }}
     >
-      <BlurView
-        intensity={50}
-        tint={scheme === "dark" ? "dark" : "light"}
-        style={{
-          borderRadius: radius.lg,
-          overflow: "hidden",
-          borderWidth: 1,
-          borderColor: colors.hairline,
-          backgroundColor: colors.glass,
-        }}
+      <View
+        style={[
+          {
+            width: "100%",
+            maxWidth: 480,
+            minHeight: scaledTabBarHeight(fontScale),
+            paddingVertical: 7,
+            paddingHorizontal: 7,
+            backgroundColor: colors.surfaceHi,
+            borderRadius: radius.pill,
+            flexDirection: "row",
+            alignItems: "center",
+          },
+          liftShadow,
+        ]}
       >
-        <View
-          onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
-          style={{ flexDirection: "row", height: TAB_BAR_HEIGHT }}
-        >
-          {tabWidth > 0 && (
-            <Animated.View
-              style={[
-                {
-                  position: "absolute",
-                  top: INDICATOR_INSET,
-                  bottom: INDICATOR_INSET,
-                  left: 0,
-                  width: tabWidth - INDICATOR_INSET * 2,
-                  borderRadius: radius.md,
-                  backgroundColor: colors.sageSoft,
-                },
-                indicatorStyle,
-              ]}
-            />
-          )}
-          {state.routes.map((route: (typeof state.routes)[number], index: number) => {
-            const config = tabConfig[route.name];
-            if (config === undefined) return null;
-            const isFocused = state.index === index;
-            const Icon = config.icon;
-            const label = t(config.labelKey);
-            const { options } = descriptors[route.key] ?? {};
-
-            return (
-              <PressableScale
-                key={route.key}
-                accessibilityLabel={options?.tabBarAccessibilityLabel ?? label}
-                accessibilityState={{ selected: isFocused }}
-                onPress={() => {
-                  const event = navigation.emit({
-                    type: "tabPress",
-                    target: route.key,
-                    canPreventDefault: true,
-                  });
-                  if (!isFocused && !event.defaultPrevented) {
-                    navigation.navigate(route.name);
-                  }
-                }}
+        {ITEMS.map(({ key, label, icon: Icon }) => {
+          const active = key === selected;
+          return (
+            <PressableScale
+              key={key}
+              accessibilityRole="tab"
+              accessibilityLabel={label}
+              accessibilityState={{ selected: active }}
+              onPress={() => onNavigate(key)}
+              style={{
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 3,
+                minHeight: 48,
+                borderRadius: radius.pill,
+                backgroundColor: active ? colors.accent : "transparent",
+              }}
+            >
+              <Icon
+                size={19}
+                strokeWidth={active ? 2.1 : 1.7}
+                color={active ? colors.onAccent : colors.onSurfaceHiSoft}
+              />
+              <Text
+                variant="eyebrow"
+                numberOfLines={1}
                 style={{
-                  flex: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 2,
+                  fontSize: 9,
+                  letterSpacing: 0.6,
+                  lineHeight: 12,
+                  color: active ? colors.onAccent : colors.onSurfaceHiSoft,
                 }}
               >
-                <Icon
-                  size={22}
-                  strokeWidth={1.5}
-                  color={isFocused ? colors.sage : colors.inkSoft}
-                />
-                <Text variant="caption" tone={isFocused ? "sage" : "soft"}>
-                  {label}
-                </Text>
-              </PressableScale>
-            );
-          })}
-        </View>
-      </BlurView>
+                {label}
+              </Text>
+            </PressableScale>
+          );
+        })}
+      </View>
     </View>
+  );
+}
+
+type TabBarProps = Parameters<
+  NonNullable<ComponentProps<typeof Tabs>["tabBar"]>
+>[0];
+
+export function TabBar({ state, navigation }: TabBarProps) {
+  const focused = state.routes[state.index]?.name;
+  return (
+    <BottomNavigation
+      selected={ITEMS.find((i) => i.route === focused)?.key ?? "home"}
+      onNavigate={(destination) => {
+        const target = ITEMS.find((i) => i.key === destination)!;
+        const route = state.routes.find((r) => r.name === target.route);
+        if (!route) return;
+        const event = navigation.emit({
+          type: "tabPress",
+          target: route.key,
+          canPreventDefault: true,
+        });
+        if (!event.defaultPrevented && focused !== route.name)
+          navigation.navigate(route.name);
+      }}
+    />
   );
 }

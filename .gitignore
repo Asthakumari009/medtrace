@@ -58,3 +58,11 @@ api/sa-vertex.json
 
 # supabase cli local state
 supabase/.temp/
+
+# Local visual QA and browser-test output
+artifacts/
+playwright-report/
+
+# build logs
+build-log.txt
+build-release.log

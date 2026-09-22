@@ -1,77 +1,46 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { ScrollView, View, type ViewProps } from "react-native";
+import {
+  ScrollView,
+  View,
+  useWindowDimensions,
+  type ScrollViewProps,
+  type ViewProps,
+} from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { enterUp } from "./motion";
-import { SCREEN_PADDING, TAB_BAR_HEIGHT, TAB_BAR_OFFSET } from "./theme";
+import { SCREEN_PADDING, scaledTabBarHeight, TAB_BAR_OFFSET } from "./theme";
 import { useTheme } from "./ThemeContext";
 
 export interface ScreenProps extends ViewProps {
+  refreshControl?: ScrollViewProps["refreshControl"];
   /** Wrap content in a ScrollView. */
   scroll?: boolean;
   /** Extra bottom padding so content clears the floating tab bar. */
   tabbed?: boolean;
   /** Disable the standard entrance animation (rarely). */
   animated?: boolean;
-  /** Ambient gradient orbs behind content. */
-  orbs?: boolean;
 }
 
 /** Content must end tab-bar height + 16 above the safe-area edge. */
-const TAB_BAR_CLEARANCE = TAB_BAR_OFFSET + TAB_BAR_HEIGHT + 16;
-
-/** Soft out-of-focus gradient discs that give the canvas depth. */
-function AmbientOrbs() {
-  const { gradients } = useTheme();
-  return (
-    <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
-      <LinearGradient
-        colors={gradients.orbSage}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={{
-          position: "absolute",
-          top: -120,
-          right: -100,
-          width: 320,
-          height: 320,
-          borderRadius: 160,
-        }}
-      />
-      <LinearGradient
-        colors={gradients.orbGold}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={{
-          position: "absolute",
-          bottom: 40,
-          left: -140,
-          width: 280,
-          height: 280,
-          borderRadius: 140,
-        }}
-      />
-    </View>
-  );
-}
-
 export function Screen({
   scroll = false,
   tabbed = false,
   animated = true,
-  orbs = true,
   style,
   children,
   ...rest
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
+  const tabClearance = TAB_BAR_OFFSET + scaledTabBarHeight(fontScale) + 16;
   const { colors } = useTheme();
 
   const padding = {
     paddingTop: insets.top + 8,
-    paddingBottom: tabbed ? insets.bottom + TAB_BAR_CLEARANCE : insets.bottom + 16,
-    paddingHorizontal: SCREEN_PADDING,
+    paddingBottom: tabbed ? insets.bottom + tabClearance : insets.bottom + 16,
+    paddingLeft: Math.max(SCREEN_PADDING, insets.left),
+    paddingRight: Math.max(SCREEN_PADDING, insets.right),
   };
 
   const body = animated ? (
@@ -85,10 +54,13 @@ export function Screen({
   if (scroll) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        {orbs && <AmbientOrbs />}
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={[padding, { flexGrow: 1 }, style]}
+          contentContainerStyle={[
+            padding,
+            { flexGrow: 1, width: "100%", maxWidth: 1040, alignSelf: "center" },
+            style,
+          ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           {...rest}
@@ -101,8 +73,15 @@ export function Screen({
 
   return (
     <View style={[{ flex: 1, backgroundColor: colors.bg }]} {...rest}>
-      {orbs && <AmbientOrbs />}
-      <View style={[{ flex: 1 }, padding, style]}>{body}</View>
+      <View
+        style={[
+          { flex: 1, width: "100%", maxWidth: 1040, alignSelf: "center" },
+          padding,
+          style,
+        ]}
+      >
+        {body}
+      </View>
     </View>
   );
 }

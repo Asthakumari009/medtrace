@@ -1,17 +1,25 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { View, type ViewProps } from "react-native";
 
-import { ambientShadow, liftShadow, radius } from "./theme";
+import { radius } from "./theme";
 import { useTheme } from "./ThemeContext";
 
 export interface CardProps extends ViewProps {
-  /** Token radius: sm 14 · md 20 · lg 28 */
+  /** Token radius: sm 12 · md 18 · lg 26 */
   rounded?: keyof typeof radius;
   padded?: boolean;
-  /** "surface" white card · "hero" forest gradient anchor (one per screen). */
-  variant?: "surface" | "hero";
+  /**
+   * surface — the default card, hairline border, no shadow.
+   * invert  — the high-contrast panel (white on dark, near-black on light).
+   *           One per screen; pair text with tone="onSurfaceHi".
+   * accent  — the acid-lime tile. One per screen at most; text tone="onAccent".
+   */
+  variant?: "surface" | "invert" | "accent";
 }
 
+/**
+ * Flat card. No gradient and no elevation: a 1px hairline reads as a card
+ * edge for free, where stacked Android elevation costs a draw pass each.
+ */
 export function Card({
   rounded = "md",
   padded = true,
@@ -20,38 +28,25 @@ export function Card({
   children,
   ...rest
 }: CardProps) {
-  const { colors, gradients } = useTheme();
+  const { colors } = useTheme();
 
-  if (variant === "hero") {
-    return (
-      <View style={[{ borderRadius: radius[rounded] }, liftShadow, style]} {...rest}>
-        <LinearGradient
-          colors={gradients.hero}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            borderRadius: radius[rounded],
-            padding: padded ? 20 : 0,
-            overflow: "hidden",
-          }}
-        >
-          {children}
-        </LinearGradient>
-      </View>
-    );
-  }
+  const background =
+    variant === "invert"
+      ? colors.surfaceHi
+      : variant === "accent"
+        ? colors.accent
+        : colors.surface;
 
   return (
     <View
       style={[
         {
-          backgroundColor: colors.surface,
+          backgroundColor: background,
           borderRadius: radius[rounded],
-          borderWidth: 1,
+          borderWidth: variant === "surface" ? 1 : 0,
           borderColor: colors.hairline,
-          padding: padded ? 16 : 0,
+          padding: padded ? 18 : 0,
         },
-        ambientShadow,
         style,
       ]}
       {...rest}

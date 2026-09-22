@@ -6,7 +6,7 @@ import { Text } from "./Text";
 import { useTheme } from "./ThemeContext";
 
 export interface RowProps {
-  /** 18pt lucide icon, sage on the soft disc. */
+  /** 18pt lucide icon, ink on a neutral fill disc. */
   icon?: React.ReactNode;
   title: string;
   subtitle?: string;
@@ -51,7 +51,7 @@ export function Row({
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: colors.sageSoft,
+            backgroundColor: colors.fill,
             alignItems: "center",
             justifyContent: "center",
           }}

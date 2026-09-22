@@ -1,22 +1,24 @@
 import Constants from "expo-constants";
-import { LinearGradient } from "expo-linear-gradient";
-import { Activity, Languages, LogOut, MoonStar, QrCode, ShieldCheck } from "lucide-react-native";
+import {
+  LogOut,
+  MoonStar,
+  QrCode,
+  ScanLine,
+  ShieldCheck,
+} from "lucide-react-native";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, View } from "react-native";
-import Animated from "react-native-reanimated";
 
-import { HealthSheet } from "@/components/HealthSheet";
-import { LanguagePicker } from "@/components/LanguagePicker";
 import { ShareSheet } from "@/components/ShareSheet";
-import { useHealthSync } from "@/hooks/useHealthSync";
 import { select } from "@/lib/haptics";
+import { onDeviceOcrAvailable } from "@/lib/ocr";
 import { displayName } from "@/lib/user";
 import { useAuth } from "@/providers/AuthProvider";
 import {
   Card,
-  enterUp,
   PressableScale,
+  radius,
   Row,
   Screen,
   SectionHeader,
@@ -31,29 +33,17 @@ const THEME_CHOICES = [
 ] as const;
 
 export default function ProfileScreen() {
-  const { colors, gradients, mode, setMode } = useTheme();
+  const { colors, mode, setMode } = useTheme();
   const { t } = useTranslation();
   const { session, signOut } = useAuth();
-  const { enabledMetrics, syncing, refresh } = useHealthSync();
   const [signingOut, setSigningOut] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [healthOpen, setHealthOpen] = useState(false);
-
-  const healthSubtitle =
-    enabledMetrics.length === 0
-      ? t("profile.healthConnect")
-      : syncing
-        ? t("profile.healthSyncing")
-        : enabledMetrics.length === 1
-          ? t("profile.healthOneMetric", {
-              label: t(`metrics.${enabledMetrics[0] ?? "steps"}.label`),
-            })
-          : t("profile.healthNMetrics", { count: enabledMetrics.length });
 
   const email = session?.user.email ?? "—";
   const name = displayName(session) ?? "You";
   const initial = name.charAt(0).toUpperCase();
   const version = Constants.expoConfig?.version ?? "0.1.0";
+  const onDevice = onDeviceOcrAvailable();
 
   const handleSignOut = (): void => {
     setSigningOut(true);
@@ -62,29 +52,25 @@ export default function ProfileScreen() {
 
   return (
     <Screen tabbed scroll animated={false}>
-      <Animated.View
-        entering={enterUp(0)}
+      <View
         style={{
           flexDirection: "row",
           alignItems: "center",
           gap: 16,
-          paddingTop: 8,
-          paddingBottom: 24,
+          paddingBottom: 26,
         }}
       >
         <View
           style={{
-            width: 64,
-            height: 64,
-            borderRadius: 32,
-            backgroundColor: colors.sageSoft,
-            borderWidth: 1,
-            borderColor: colors.hairline,
+            width: 62,
+            height: 62,
+            borderRadius: radius.pill,
+            backgroundColor: colors.accent,
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Text variant="title" tone="sage">
+          <Text variant="heading" tone="onAccent">
             {initial}
           </Text>
         </View>
@@ -96,82 +82,71 @@ export default function ProfileScreen() {
             {email}
           </Text>
         </View>
-      </Animated.View>
+      </View>
 
       <View style={{ gap: 20 }}>
-        <Animated.View entering={enterUp(1)} style={{ gap: 6 }}>
-          <SectionHeader title={t("profile.sectionHealth")} />
+        <View style={{ gap: 6 }}>
+          <SectionHeader title="Privacy" />
           <Card padded={false}>
             <Row
-              icon={<Activity size={18} strokeWidth={1.5} color={colors.sage} />}
-              title={t("profile.healthData")}
-              subtitle={healthSubtitle}
-              onPress={() => setHealthOpen(true)}
-            />
-          </Card>
-        </Animated.View>
-
-        <Animated.View entering={enterUp(2)} style={{ gap: 6 }}>
-          <SectionHeader title={t("profile.sectionPrivacy")} />
-          <Card padded={false}>
-            <Row
-              icon={<QrCode size={18} strokeWidth={1.5} color={colors.sage} />}
+              icon={<QrCode size={18} strokeWidth={1.7} color={colors.ink} />}
               title={t("profile.share")}
               subtitle={t("profile.shareSub")}
               onPress={() => setShareOpen(true)}
             />
           </Card>
-          <Card
-            style={{
-              backgroundColor: colors.sageSoft,
-              borderColor: "transparent",
-              overflow: "hidden",
-              marginTop: 6,
-            }}
-          >
-            {/* Watermark shield — quiet motif, hidden from screen readers. */}
+
+          {/* The on-device claim, stated only when this build can honour it. */}
+          <Card rounded="lg" style={{ marginTop: 6 }}>
             <View
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-              pointerEvents="none"
-              style={{ position: "absolute", right: -14, bottom: -22, opacity: 0.12 }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
             >
-              <ShieldCheck size={112} strokeWidth={1} color={colors.sage} />
-            </View>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <LinearGradient
-                colors={gradients.primary}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+              <View
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 22,
+                  width: 42,
+                  height: 42,
+                  borderRadius: radius.sm,
+                  backgroundColor: colors.fill,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <ShieldCheck size={20} strokeWidth={1.5} color={colors.onSage} />
-              </LinearGradient>
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text variant="label">{t("profile.trustTitle")}</Text>
+                {onDevice ? (
+                  <ScanLine size={20} strokeWidth={1.7} color={colors.ink} />
+                ) : (
+                  <ShieldCheck size={20} strokeWidth={1.7} color={colors.ink} />
+                )}
+              </View>
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text variant="label">
+                  {onDevice ? "Reports are read on this phone" : "Your data, your call"}
+                </Text>
                 <Text variant="caption" tone="soft" style={{ lineHeight: 18 }}>
-                  {t("profile.trustBody")}
+                  {onDevice
+                    ? "Photographed reports are recognised here and only the extracted text is sent. PDFs are read in the cloud."
+                    : "Reports are uploaded to private storage only you can read, and shared only when you generate a link."}
                 </Text>
               </View>
             </View>
           </Card>
-        </Animated.View>
+        </View>
 
-        <Animated.View entering={enterUp(3)} style={{ gap: 6 }}>
+        <View style={{ gap: 6 }}>
           <SectionHeader title={t("profile.sectionApp")} />
           <Card padded={false}>
             <Row
-              icon={<MoonStar size={18} strokeWidth={1.5} color={colors.sage} />}
+              icon={<MoonStar size={18} strokeWidth={1.7} color={colors.ink} />}
               title={t("profile.appearance")}
               subtitle={t("profile.appearanceSub")}
             />
-            <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingBottom: 14 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 8,
+                paddingHorizontal: 16,
+                paddingBottom: 14,
+              }}
+            >
               {THEME_CHOICES.map((choice) => {
                 const selected = mode === choice.mode;
                 const label = t(choice.labelKey);
@@ -190,13 +165,16 @@ export default function ProfileScreen() {
                       alignItems: "center",
                       justifyContent: "center",
                       paddingVertical: 10,
-                      borderRadius: 22,
+                      borderRadius: radius.pill,
                       borderWidth: 1,
-                      borderColor: selected ? colors.sage : colors.hairline,
-                      backgroundColor: selected ? colors.sageSoft : "transparent",
+                      borderColor: selected ? colors.ink : colors.hairline,
+                      backgroundColor: selected ? colors.ink : "transparent",
                     }}
                   >
-                    <Text variant="label" tone={selected ? "sage" : "soft"}>
+                    <Text
+                      variant="label"
+                      style={{ color: selected ? colors.bg : colors.inkSoft }}
+                    >
                       {label}
                     </Text>
                   </PressableScale>
@@ -205,45 +183,31 @@ export default function ProfileScreen() {
             </View>
             <View style={{ height: 1, backgroundColor: colors.hairline }} />
             <Row
-              icon={<Languages size={18} strokeWidth={1.5} color={colors.sage} />}
-              title={t("profile.language")}
-              subtitle={t("profile.languageSub")}
-            />
-            <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
-              <LanguagePicker />
-            </View>
-            <View style={{ height: 1, backgroundColor: colors.hairline }} />
-            <Row
               icon={
                 <LogOut
                   size={18}
-                  strokeWidth={1.5}
+                  strokeWidth={1.7}
                   color={signingOut ? colors.inkFaint : colors.inkSoft}
                 />
               }
               title={t("profile.signOut")}
               chevron={false}
               trailing={
-                signingOut ? <ActivityIndicator size="small" color={colors.sage} /> : undefined
+                signingOut ? (
+                  <ActivityIndicator size="small" color={colors.ink} />
+                ) : undefined
               }
               onPress={signingOut ? undefined : handleSignOut}
             />
           </Card>
-        </Animated.View>
+        </View>
 
-        <Animated.View entering={enterUp(4)}>
-          <Text variant="caption" tone="faint" style={{ textAlign: "center" }}>
-            VITA {version}
-          </Text>
-        </Animated.View>
+        <Text variant="eyebrow" tone="faint" style={{ textAlign: "center" }}>
+          MedTrace {version}
+        </Text>
       </View>
 
       <ShareSheet visible={shareOpen} onClose={() => setShareOpen(false)} />
-      <HealthSheet
-        visible={healthOpen}
-        onClose={() => setHealthOpen(false)}
-        onChanged={() => void refresh()}
-      />
     </Screen>
   );
 }

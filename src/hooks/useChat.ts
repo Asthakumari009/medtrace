@@ -41,10 +41,12 @@ export function useChat(): UseChatResult {
   const [thinking, setThinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Whatever is awaiting an answer, kept for retry after a failure.
+  const busy = useRef(false);
   const pendingTurns = useRef<ChatTurn[] | null>(null);
   const pendingVoice = useRef<PendingVoice | null>(null);
 
   const run = useCallback(async (turns: ChatTurn[]): Promise<void> => {
+    busy.current = true;
     setThinking(true);
     setError(null);
     try {
@@ -57,11 +59,13 @@ export function useChat(): UseChatResult {
     } catch {
       setError(t("chat.error"));
     } finally {
+      busy.current = false;
       setThinking(false);
     }
   }, []);
 
   const runVoice = useCallback(async (pending: PendingVoice): Promise<void> => {
+    busy.current = true;
     setThinking(true);
     setError(null);
     try {
@@ -86,6 +90,7 @@ export function useChat(): UseChatResult {
     } catch {
       setError(t("chat.error"));
     } finally {
+      busy.current = false;
       setThinking(false);
     }
   }, []);
@@ -93,7 +98,7 @@ export function useChat(): UseChatResult {
   const send = useCallback(
     (text: string): void => {
       const content = text.trim();
-      if (content === "" || thinking) return;
+      if (content === "" || thinking || busy.current) return;
       const userMessage: ChatMessage = { id: newId(), role: "user", content };
       const turns = [...messages, userMessage].map(
         (m): ChatTurn => ({ role: m.role, content: m.content }),
@@ -108,7 +113,7 @@ export function useChat(): UseChatResult {
 
   const sendVoice = useCallback(
     (audioUri: string, fallbackLabel: string): void => {
-      if (thinking) return;
+      if (thinking || busy.current) return;
       const pending: PendingVoice = {
         uri: audioUri,
         fallbackLabel,
@@ -122,7 +127,7 @@ export function useChat(): UseChatResult {
   );
 
   const retry = useCallback((): void => {
-    if (thinking) return;
+    if (thinking || busy.current) return;
     if (pendingVoice.current !== null) {
       void runVoice(pendingVoice.current);
     } else if (pendingTurns.current !== null) {

@@ -1,95 +1,82 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   KeyboardAvoidingView,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from "react-native";
-import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
 import Animated, {
-  interpolate,
   runOnJS,
-  type SharedValue,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "./Text";
-import { radius, SPRING } from "./theme";
+import { DUR, EASE_OUT, liftShadow, radius } from "./theme";
 import { useTheme } from "./ThemeContext";
-
-const SheetContext = createContext<SharedValue<number> | null>(null);
-
-/** Mount once near the root. Tracks open-sheet progress for the stage scale. */
-export function SheetProvider({ children }: { children: React.ReactNode }) {
-  const progress = useSharedValue(0);
-  return <SheetContext.Provider value={progress}>{children}</SheetContext.Provider>;
-}
-
-function useSheetProgress(): SharedValue<number> {
-  const ctx = useContext(SheetContext);
-  const fallback = useSharedValue(0);
-  return ctx ?? fallback;
-}
-
-/** Wraps app content; scales it to 0.96 behind an open sheet. */
-export function SheetStage({ children }: { children: React.ReactNode }) {
-  const progress = useSheetProgress();
-  const { colors } = useTheme();
-
-  const stageStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(progress.value, [0, 1], [1, 0.96]) }],
-    borderRadius: interpolate(progress.value, [0, 1], [0, radius.lg]),
-  }));
-
-  return (
-    <View style={{ flex: 1, backgroundColor: colors.bgDeep }}>
-      <Animated.View style={[{ flex: 1, overflow: "hidden" }, stageStyle]}>
-        {children}
-      </Animated.View>
-    </View>
-  );
-}
 
 export interface SheetProps {
   visible: boolean;
   onClose: () => void;
   title?: string;
+  closeLabel?: string;
   children: React.ReactNode;
 }
 
 const DISMISS_DRAG = 120;
 const DISMISS_VELOCITY = 800;
-const OFFSCREEN = 640;
+const OFFSCREEN = 1200;
 
 /**
- * Bottom sheet: springs up on the house spring, drag-to-dismiss via
- * gesture-handler, backdrop fade, background stage scales to 0.96.
+ * Bottom sheet: slides up on the house curve and decelerates to rest — no
+ * overshoot, and the app behind it does not scale (a full-tree transform per
+ * frame bought nothing but a flourish). Drag-to-dismiss via gesture-handler.
  */
-export function Sheet({ visible, onClose, title, children }: SheetProps) {
+export function Sheet({
+  visible,
+  onClose,
+  title,
+  closeLabel,
+  children,
+}: SheetProps) {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const progress = useSheetProgress();
+  const opacity = useSharedValue(0);
   const translateY = useSharedValue(OFFSCREEN);
   const [mounted, setMounted] = useState(visible);
+  const body = useRef<ScrollView>(null);
 
   useEffect(() => {
+    const timing = { duration: DUR.base, easing: EASE_OUT };
     if (visible) {
       setMounted(true);
-      progress.value = withSpring(1, SPRING);
-      translateY.value = withSpring(0, SPRING);
-    } else {
-      progress.value = withSpring(0, SPRING);
-      translateY.value = withSpring(OFFSCREEN, SPRING, (finished) => {
-        if (finished === true) runOnJS(setMounted)(false);
-      });
+      opacity.value = withTiming(1, timing);
+      translateY.value = withTiming(0, timing);
+      return;
     }
-  }, [visible, progress, translateY]);
+    opacity.value = withTiming(0, timing);
+    translateY.value = withTiming(OFFSCREEN, timing, (finished) => {
+      if (finished === true) runOnJS(setMounted)(false);
+    });
+    // Safety net: if the UI thread is wedged (e.g. returning from a native
+    // permission activity), the completion callback may never fire. Unmount
+    // anyway so the full-screen backdrop can't trap the app.
+    const fallback = setTimeout(() => setMounted(false), 600);
+    return () => clearTimeout(fallback);
+  }, [visible, opacity, translateY]);
 
   const pan = Gesture.Pan()
     .onUpdate((e) => {
@@ -99,14 +86,14 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
       if (e.translationY > DISMISS_DRAG || e.velocityY > DISMISS_VELOCITY) {
         runOnJS(onClose)();
       } else {
-        translateY.value = withSpring(0, SPRING);
+        translateY.value = withTiming(0, {
+          duration: DUR.base,
+          easing: EASE_OUT,
+        });
       }
     });
 
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 1], [0, 1]),
-  }));
-
+  const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const panelStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
@@ -114,10 +101,21 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
   if (!mounted) return null;
 
   return (
-    <Modal transparent visible statusBarTranslucent animationType="none" onRequestClose={onClose}>
+    <Modal
+      transparent
+      visible
+      statusBarTranslucent
+      animationType="none"
+      onRequestClose={onClose}
+      onShow={() => body.current?.scrollTo({ y: 0, animated: false })}
+    >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Animated.View
-          style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim }, backdropStyle]}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: colors.scrim },
+            backdropStyle,
+          ]}
         >
           <Pressable
             accessibilityLabel={t("common.close")}
@@ -125,44 +123,94 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
             onPress={onClose}
           />
         </Animated.View>
-        {/* Edge-to-edge Android ignores adjustResize, so pad on both platforms. */}
-        <KeyboardAvoidingView behavior="padding" pointerEvents="box-none" style={{ flex: 1 }}>
-          <GestureDetector gesture={pan}>
-            <Animated.View
-              style={[
-                {
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: colors.surface,
-                  borderTopLeftRadius: radius.lg,
-                  borderTopRightRadius: radius.lg,
-                  paddingHorizontal: 20,
-                  paddingTop: 12,
-                  paddingBottom: insets.bottom + 20,
-                },
-                panelStyle,
-              ]}
-            >
+        {/* Normal flex positioning lets keyboard padding move the whole panel. */}
+        <KeyboardAvoidingView
+          behavior="padding"
+          pointerEvents="box-none"
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            alignItems: "center",
+            paddingTop: insets.top + 12,
+          }}
+        >
+          <Animated.View
+            accessibilityViewIsModal
+            style={[
+              {
+                width: "100%",
+                maxWidth: 760,
+                maxHeight: height - insets.top - 12,
+                flexShrink: 1,
+                backgroundColor: colors.bg,
+                borderTopLeftRadius: radius.lg,
+                borderTopRightRadius: radius.lg,
+                borderTopWidth: 1,
+                borderColor: colors.hairline,
+                paddingHorizontal: Math.max(20, insets.left, insets.right),
+                paddingBottom: insets.bottom + 20,
+              },
+              liftShadow,
+              panelStyle,
+            ]}
+          >
+            {/* Only the handle drags; scrolling a medical record must not dismiss it. */}
+            <GestureDetector gesture={pan}>
               <View
                 style={{
-                  alignSelf: "center",
-                  width: 36,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: colors.fill,
-                  marginBottom: 16,
+                  height: 32,
+                  justifyContent: "center",
+                  alignItems: "center",
                 }}
-              />
-              {title !== undefined && (
-                <Text variant="heading" style={{ marginBottom: 16 }}>
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: colors.hairline,
+                  }}
+                />
+              </View>
+            </GestureDetector>
+            {title !== undefined && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  marginBottom: 12,
+                }}
+              >
+                <Text variant="heading" style={{ flex: 1 }}>
                   {title}
                 </Text>
-              )}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={closeLabel ?? t("common.close")}
+                  onPress={onClose}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ fontSize: 25 }}>×</Text>
+                </Pressable>
+              </View>
+            )}
+            <ScrollView
+              ref={body}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              style={{ flexShrink: 1 }}
+              contentContainerStyle={{ paddingBottom: 2 }}
+            >
               {children}
-            </Animated.View>
-          </GestureDetector>
+            </ScrollView>
+          </Animated.View>
         </KeyboardAvoidingView>
       </GestureHandlerRootView>
     </Modal>

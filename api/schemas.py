@@ -6,6 +6,8 @@ failed; partial/invalid data never lands in extracted_observations.
 """
 
 import datetime as dt
+import math
+import re
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -51,10 +53,13 @@ class ExtractedObservation(BaseModel):
         return v
 
     def numeric_value(self) -> Optional[float]:
-        """Best-effort numeric parse of the value for trend math."""
-        cleaned = self.value.replace(",", "").strip()
+        """Only exact decimal/scientific values; preserve ambiguous text as text."""
+        cleaned = self.value.strip()
+        if not re.fullmatch(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", cleaned):
+            return None
         try:
-            return float(cleaned)
+            value = float(cleaned)
+            return value if math.isfinite(value) else None
         except ValueError:
             return None
 

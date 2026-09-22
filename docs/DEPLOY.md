@@ -32,7 +32,7 @@ function and must never appear in an `EXPO_PUBLIC_*` name.
 # --- build time (web export) ---
 vercel env add EXPO_PUBLIC_SUPABASE_URL           production   # https://sjwupugbajrtegjgnxba.supabase.co
 vercel env add EXPO_PUBLIC_SUPABASE_ANON_KEY      production   # sb_publishable_... (from .env)
-vercel env add EXPO_PUBLIC_API_URL                production   # https://medtrace-git-master-asthakumari009s-projects.vercel.app
+vercel env add EXPO_PUBLIC_API_URL                production   # https://medtrace-asthakumari009s-projects.vercel.app
 vercel env add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID   production   # from .env
 
 # --- runtime (FastAPI) ---
@@ -41,7 +41,7 @@ vercel env add SUPABASE_SECRET_KEY   production   # Medtrace project -> Settings
 vercel env add GOOGLE_CLOUD_PROJECT  production   # bytesofjoy-501900
 vercel env add GOOGLE_CLOUD_LOCATION production   # global
 vercel env add GEMINI_MODEL          production   # gemini-2.5-flash
-vercel env add VITA_ALLOWED_ORIGINS  production   # https://medtrace-git-master-asthakumari009s-projects.vercel.app
+vercel env add VITA_ALLOWED_ORIGINS  production   # https://medtrace-asthakumari009s-projects.vercel.app
 vercel env add GOOGLE_SA_JSON        production   # paste the ENTIRE contents of api/vertex.json
 ```
 
@@ -70,6 +70,28 @@ both the web bundle and the Android binary.
 2. Set it as `EXPO_PUBLIC_API_URL` in Vercel (step 2) **and** in local `.env`.
 3. Redeploy so the web bundle picks it up: `vercel --prod`.
 4. Rebuild the Android app — the old APK still points at the previous URL.
+
+## 4a. Turn off Deployment Protection — or the demo dies
+
+Vercel Authentication is **on by default** and every protected URL answers `302` to
+`vercel.com/sso-api` instead of your app. A browser follows it and a human logs in, so
+the site looks fine. Nothing else does:
+
+- the Android app POSTs `/extract` and gets a redirect to an HTML login page, not JSON;
+- a doctor scanning the QR lands on a Vercel login wall for an account they do not have.
+
+Project → **Settings → Deployment Protection**. Either disable Vercel Authentication, or
+set it to *Only Preview Deployments* and make sure the app points at the **production**
+domain. Confirm with:
+
+```
+curl -s -o /dev/null -w '%{http_code}
+' https://<your-url>/health   # 200, not 302
+```
+
+A `302` to `vercel.com/sso-api` means protection is still on. Note that branch aliases
+like `medtrace-git-master-…` are *preview* URLs and stay protected under the
+preview-only setting — do not point the app at one.
 
 ## 5. Verify
 

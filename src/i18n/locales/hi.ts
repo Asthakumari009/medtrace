@@ -34,7 +34,7 @@ const hi: typeof en = {
   },
   auth: {
     emailTitle: "आपका ईमेल क्या है?",
-    emailSub: "हम छह अंकों का साइन-इन कोड भेजेंगे। कोई पासवर्ड नहीं।",
+    emailSub: "हम आठ अंकों का साइन-इन कोड भेजेंगे। कोई पासवर्ड नहीं।",
     emailPlaceholder: "you@example.com",
     sendCode: "कोड भेजें",
     verifyTitle: "अपना कोड डालें",

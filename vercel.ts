@@ -18,6 +18,11 @@ const API_PATHS = [
   "/voice",
   "/extract",
   "/shares",
+  // "/share" exactly, as well as everything under it. Without the bare path,
+  // POST /share — the call that mints a QR — fell through to the SPA catch-all
+  // below and hit index.html, which answers 405. The feature was dead in
+  // production while every other share route worked.
+  "/share",
   "/share/(.*)",
   "/doctor-assets/(.*)",
 ];

@@ -8,7 +8,13 @@ import { error as errorHaptic, success } from "@/lib/haptics";
 import { supabase } from "@/lib/supabase";
 import { enterUp, OTPInput, PressableScale, Screen, Text } from "@/ui";
 
-const CODE_LENGTH = 6;
+// Must match the Supabase project's "OTP Length" (Authentication → Sign In /
+// Providers → Email). This project issues 8, and the screen auto-submits the
+// moment it has CODE_LENGTH digits — set to 6 it submitted a truncated code
+// and no one could ever sign in by email.
+// ponytail: coupled by hand to a dashboard setting; if Supabase gains an API
+// for it, read it instead of hardcoding.
+const CODE_LENGTH = 8;
 const RESEND_SECONDS = 60;
 
 export default function VerifyScreen() {

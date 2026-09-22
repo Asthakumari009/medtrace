@@ -34,7 +34,7 @@ const te: typeof en = {
   },
   auth: {
     emailTitle: "మీ ఇమెయిల్ ఏమిటి?",
-    emailSub: "ఆరు అంకెల సైన్-ఇన్ కోడ్ పంపుతాం. పాస్‌వర్డ్‌లు అక్కర్లేదు.",
+    emailSub: "ఎనిమిది అంకెల సైన్-ఇన్ కోడ్ పంపుతాం. పాస్‌వర్డ్‌లు అక్కర్లేదు.",
     emailPlaceholder: "you@example.com",
     sendCode: "కోడ్ పంపండి",
     verifyTitle: "మీ కోడ్ నమోదు చేయండి",

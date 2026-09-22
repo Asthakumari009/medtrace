@@ -33,7 +33,7 @@ const en = {
   },
   auth: {
     emailTitle: "What's your email?",
-    emailSub: "We'll send you a six-digit sign-in code. No passwords.",
+    emailSub: "We'll send you an eight-digit sign-in code. No passwords.",
     emailPlaceholder: "you@example.com",
     sendCode: "Send code",
     verifyTitle: "Enter your code",

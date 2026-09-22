@@ -2,10 +2,14 @@
 # vercel.ts) and the FastAPI service in /api. The old allowlist uploaded ONLY
 # /api, which is why nothing but the API could ever be served.
 
-# Never upload local-only API artifacts or credentials.
+# Never upload local-only API artifacts or credentials. On Vercel the service
+# account arrives as the GOOGLE_SA_JSON env var, never as a file — matched by
+# shape here so a differently-named key file cannot ride along.
 /api/.venv
 /api/.env
 /api/sa-vertex.json
+/api/vertex.json
+/api/*service-account*.json
 /api/__pycache__
 /api/dev_otp.py
 

@@ -26,7 +26,7 @@ async function doctor(page: Page) {
           : file.endsWith(".css")
             ? "text/css"
             : "text/html",
-        body: readFileSync(resolve("api/doctor-web", file)),
+        body: readFileSync(resolve("doctor-web", file)),
       });
       return;
     }

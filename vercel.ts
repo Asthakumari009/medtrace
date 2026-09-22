@@ -29,8 +29,10 @@ export const config: VercelConfig = {
 
   functions: {
     "api/index.py": {
-      // The doctor view is served as files from inside the function.
-      includeFiles: "api/doctor-web/**",
+      // The doctor page's files are read off disk by api/sharing.py and served
+      // through the function, so they must be in the bundle. They live outside
+      // api/ because Vercel builds everything in api/ as a function.
+      includeFiles: "doctor-web/**",
       // Extraction runs a long Gemini call on a whole document.
       maxDuration: 60,
       memory: 1024,

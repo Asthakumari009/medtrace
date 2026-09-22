@@ -49,9 +49,16 @@ api/.venv/
 api/.env
 __pycache__/
 
-# google service account credentials — never commit
+# google service account credentials — never commit.
+# Match by shape, not by one filename: these arrive named whatever the Cloud
+# console called them, and this repo is public.
 sa-vertex.json
 api/sa-vertex.json
+vertex.json
+api/vertex.json
+*service-account*.json
+*-serviceaccount*.json
+gcp-*.json
 
 # vercel local project link
 .vercel/

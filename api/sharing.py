@@ -13,7 +13,25 @@ NO_STORE = {'Cache-Control': 'no-store, private, max-age=0', 'Pragma': 'no-cache
             'Expires': '0', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff',
             'X-Frame-Options': 'DENY'}
 LEASE_MS = 900
-ASSETS = Path(__file__).parent / 'doctor-web'
+
+
+def _assets_dir() -> Path:
+    """Locate the doctor page's static files.
+
+    They live at the repo root, NOT under api/: Vercel treats every file in
+    api/ as a serverless function, so api/doctor-web/doctor.js was built as a
+    function and collided with doctor.css. Both candidates are probed because
+    the deployed filesystem layout is the one thing that cannot be verified
+    locally, and a wrong guess only shows up as a 500 on the doctor page.
+    """
+    here = Path(__file__).resolve().parent
+    for candidate in (here.parent / 'doctor-web', here / 'doctor-web'):
+        if (candidate / 'index.html').is_file():
+            return candidate
+    return here.parent / 'doctor-web'
+
+
+ASSETS = _assets_dir()
 
 
 class ShareOptions(BaseModel):

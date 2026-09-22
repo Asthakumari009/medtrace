@@ -13,7 +13,10 @@ vercel login
 vercel whoami        # must print your account, not "Error: Not authorized"
 ```
 
-## 1. Link a new project
+## 1. Link the project
+
+Already created as `medtrace` under `asthakumari009s-projects`. If `.vercel/` is
+missing locally:
 
 ```
 vercel link --yes --project medtrace
@@ -29,17 +32,17 @@ function and must never appear in an `EXPO_PUBLIC_*` name.
 # --- build time (web export) ---
 vercel env add EXPO_PUBLIC_SUPABASE_URL           production   # https://sjwupugbajrtegjgnxba.supabase.co
 vercel env add EXPO_PUBLIC_SUPABASE_ANON_KEY      production   # sb_publishable_... (from .env)
-vercel env add EXPO_PUBLIC_API_URL                production   # https://medtrace.vercel.app  (see step 4)
+vercel env add EXPO_PUBLIC_API_URL                production   # https://medtrace-git-master-asthakumari009s-projects.vercel.app
 vercel env add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID   production   # from .env
 
 # --- runtime (FastAPI) ---
 vercel env add SUPABASE_URL          production   # https://sjwupugbajrtegjgnxba.supabase.co
 vercel env add SUPABASE_SECRET_KEY   production   # Medtrace project -> Settings -> API keys -> secret
-vercel env add GOOGLE_CLOUD_PROJECT  production   # from api/.env
+vercel env add GOOGLE_CLOUD_PROJECT  production   # bytesofjoy-501900
 vercel env add GOOGLE_CLOUD_LOCATION production   # global
 vercel env add GEMINI_MODEL          production   # gemini-2.5-flash
-vercel env add VITA_ALLOWED_ORIGINS  production   # https://medtrace.vercel.app
-vercel env add GOOGLE_SA_JSON        production   # paste the ENTIRE contents of api/sa-vertex.json
+vercel env add VITA_ALLOWED_ORIGINS  production   # https://medtrace-git-master-asthakumari009s-projects.vercel.app
+vercel env add GOOGLE_SA_JSON        production   # paste the ENTIRE contents of api/vertex.json
 ```
 
 Two traps here:
@@ -98,3 +101,23 @@ npm run export:web        # must succeed; this is what Vercel runs
 ```
 
 `npm run check:release` is a separate gate for store builds, not for Vercel.
+
+
+## Known wart: stray functions under api/
+
+Vercel builds **every** `.py` in `api/` as its own function, so `api/main.py`,
+`chat.py`, `extraction.py`, `schemas.py` and `sharing.py` each get one on top of
+`api/index.py`. They all import the same FastAPI app, so `/api/main` answers the same
+routes `/health` and friends do — same auth, same RLS, no hole, but wasteful cold
+starts and a confusing second surface.
+
+This predates `vercel.ts` (the old `vercel.json` had it too and simply rewrote
+everything to `/api/index`, hiding it). `.vercelignore` cannot fix it: those modules
+must be uploaded because `index.py` imports them.
+
+The real fix is to move the app into a non-magic directory — `server/` — leaving
+`api/index.py` as the only thing in `api/`, importing from `server`. Worth doing, but
+not while a demo is pending: it touches every import in the API and the test suite.
+
+`api/dev_otp.py` is already excluded in `.vercelignore` — it is the one module
+`index.py` does not import.

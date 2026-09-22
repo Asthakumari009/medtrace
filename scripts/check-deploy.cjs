@@ -1,6 +1,6 @@
 // Post-deploy gate. Usage: node scripts/check-deploy.cjs https://your-url
 //
-// Checks the things that fail *quietly* — a protected deployment answers every
+// Checks the things that fail *quietly* -- a protected deployment answers every
 // request with a redirect a browser silently follows, and a web bundle built
 // without EXPO_PUBLIC_API_URL points at localhost while looking perfectly fine.
 // No configuration values are printed.
@@ -34,10 +34,10 @@ const checks = [
       const { status, body } = await get('/health');
       if (status !== 200) return `expected 200, got ${status}`;
       let json;
-      try { json = JSON.parse(body); } catch { return 'response was not JSON — is /health hitting the web app instead of the function?'; }
+      try { json = JSON.parse(body); } catch { return 'response was not JSON -- is /health hitting the web app instead of the function?'; }
       const cfg = json.config || {};
-      if (cfg.supabase !== true) return 'supabase:false — SUPABASE_URL and/or SUPABASE_SECRET_KEY missing in Vercel';
-      if (cfg.vertex !== true) return 'vertex:false — set GOOGLE_SA_JSON (and GOOGLE_CLOUD_PROJECT), and do NOT also set GOOGLE_APPLICATION_CREDENTIALS';
+      if (cfg.supabase !== true) return 'supabase:false -- SUPABASE_URL and/or SUPABASE_SECRET_KEY missing in Vercel';
+      if (cfg.vertex !== true) return 'vertex:false -- set GOOGLE_SA_JSON (and GOOGLE_CLOUD_PROJECT), and do NOT also set GOOGLE_APPLICATION_CREDENTIALS';
       return null;
     },
   },
@@ -46,19 +46,29 @@ const checks = [
     async run() {
       const { status, body } = await get('/');
       if (status !== 200) return `expected 200, got ${status}`;
-      if (!/<html/i.test(body)) return 'root did not return HTML — check buildCommand/outputDirectory and .vercelignore';
+      if (!/<html/i.test(body)) return 'root did not return HTML -- check buildCommand/outputDirectory and .vercelignore';
       return null;
     },
   },
   {
-    name: 'Web bundle does not point at localhost',
+    // The API URL lands in the __common chunk, not entry -- Expo Router
+    // code-splits. Reading entry alone made this pass on any bundle, because
+    // the string it was looking for was never there to begin with.
+    name: 'Web bundle points at this deployment (not localhost, not a stale alias)',
     async run() {
       const { body } = await get('/');
-      const script = (body.match(/\/_expo\/static\/js\/web\/entry-[^"']+\.js/) || [])[0];
-      if (!script) return 'could not find the entry bundle in index.html';
-      const { body: js } = await get(script);
-      if (/localhost:8000/.test(js))
-        return 'bundle contains localhost:8000 — EXPO_PUBLIC_API_URL was not set at build time. Set it in Vercel and redeploy.';
+      const chunks = [...new Set(body.match(/\/_expo\/static\/js\/web\/[\w[\]-]+-[a-f0-9]+\.js/g) || [])];
+      if (!chunks.length) return 'no bundle chunks referenced from index.html';
+      const host = new URL(base).host;
+      let sawHost = false;
+      for (const chunk of chunks) {
+        const { body: js } = await get(chunk);
+        if (/localhost:8000/.test(js))
+          return `${chunk} contains localhost:8000 -- EXPO_PUBLIC_API_URL was unset at build time, so http.ts fell back. Set it in Vercel and redeploy.`;
+        if (js.includes(host)) sawHost = true;
+      }
+      if (!sawHost)
+        return `none of the ${chunks.length} chunk(s) mention ${host} -- EXPO_PUBLIC_API_URL points somewhere else (an old project or a preview alias). Run this against the production domain.`;
       return null;
     },
   },
@@ -78,10 +88,10 @@ const checks = [
       const body = await res.text();
       let json;
       try { json = JSON.parse(body); } catch {
-        return '401 was not JSON — this is the protection wall answering, not the API';
+        return '401 was not JSON -- this is the protection wall answering, not the API';
       }
       if (typeof json.detail !== 'string')
-        return '401 JSON had no `detail` — not a FastAPI response';
+        return '401 JSON had no `detail` -- not a FastAPI response';
       return null;
     },
   },
@@ -89,7 +99,7 @@ const checks = [
     name: 'Doctor page assets are bundled with the function',
     async run() {
       const { status } = await get('/doctor-assets/doctor.css');
-      if (status !== 200) return `expected 200, got ${status} — check includeFiles in vercel.ts and the doctor-web/ location`;
+      if (status !== 200) return `expected 200, got ${status} -- check includeFiles in vercel.ts and the doctor-web/ location`;
       return null;
     },
   },

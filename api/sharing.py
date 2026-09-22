@@ -185,7 +185,7 @@ def build_share_router(client_factory, verify_user):
         ids = grant['scope'].get('report_ids', [])
         user_id = grant['user_id']
         # Never provide a signed file URL: it would outlive the revocable view.
-        reports = db.table('reports').select('id, title, report_date, file_type').eq('user_id', user_id).eq('status', 'processed').in_('id', ids).order('report_date', desc=True).execute().data
+        reports = db.table('reports').select('id, title, report_date, file_type, doctor_name, facility_name, diagnoses, medications').eq('user_id', user_id).eq('status', 'processed').in_('id', ids).order('report_date', desc=True).execute().data
         observations = []
         # PostgREST commonly caps a response at 1,000 rows. Page explicitly so
         # large shares do not silently lose results (100 reports x 200 values).

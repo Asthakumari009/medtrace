@@ -60,6 +60,10 @@ export function ReportReader({
     [observations],
   );
   const flagged = observations.filter((o) => o.flagged).length;
+  // Most lab reports name a lab and no clinician; consultation notes name both.
+  const issuer =
+    [report.doctor_name, report.facility_name].filter(Boolean).join(" · ") ||
+    null;
   const filtered = useMemo(
     () =>
       observations
@@ -93,6 +97,11 @@ export function ReportReader({
             ? "Read on your phone · no copy stored"
             : `${report.file_type.toUpperCase()} source`}
         </Text>
+        {issuer !== null && (
+          <Text variant="caption" tone="soft">
+            {issuer}
+          </Text>
+        )}
         <View
           style={{
             flexDirection: "row",
@@ -130,6 +139,43 @@ export function ReportReader({
           <Text variant="label">At a glance</Text>
           <Text variant="label" tone="soft" style={{ lineHeight: 24 }}>
             {summary}
+          </Text>
+        </View>
+      )}
+      {report.diagnoses.length > 0 && (
+        <View style={{ gap: 8 }}>
+          <Text variant="label">Stated on this document</Text>
+          {report.diagnoses.map((name) => (
+            <Text key={name} variant="label" tone="soft">
+              {name}
+            </Text>
+          ))}
+        </View>
+      )}
+      {report.medications.length > 0 && (
+        <View style={{ gap: 8 }}>
+          <Text variant="label">Medicines listed</Text>
+          {report.medications.map((med, i) => (
+            <View
+              key={`${med.name}-${i}`}
+              style={{
+                borderTopWidth: i === 0 ? 0 : 1,
+                borderColor: colors.hairline,
+                paddingTop: i === 0 ? 0 : 10,
+                gap: 3,
+              }}
+            >
+              <Text variant="label">{med.name}</Text>
+              <Text variant="caption" tone="soft" style={tabularNums}>
+                {[med.dose, med.frequency, med.duration]
+                  .filter(Boolean)
+                  .join(" · ") || "No dose recorded"}
+              </Text>
+            </View>
+          ))}
+          <Text variant="caption" tone="soft">
+            Copied from the document as written. This is not a current
+            prescription — only your doctor can change what you take.
           </Text>
         </View>
       )}

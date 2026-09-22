@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-import type { ObservationStats } from "@/hooks/useTimeline";
+import type { ObservationStats, ReportClinical } from "@/hooks/useTimeline";
 import type { ReportRow, TimelineEventRow } from "@/lib/database.types";
 
 export type Destination = "home" | "records" | "chat" | "profile";
@@ -11,6 +11,7 @@ export interface HealthData {
   events: TimelineEventRow[];
   pending: ReportRow[];
   stats: Record<string, ObservationStats>;
+  clinical: Record<string, ReportClinical>;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;

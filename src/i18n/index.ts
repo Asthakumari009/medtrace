@@ -4,14 +4,19 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
 import en from "./locales/en";
+import hi from "./locales/hi";
+import te from "./locales/te";
 
 /**
- * English only. Adding a language back = one locale file plus one entry
- * here; Intl formatting and the AI layer's language hint follow from the
- * `locale` field.
+ * Adding a language = one locale file plus one entry here; Intl formatting
+ * and the AI layer's language hint follow from the `locale` field. The code
+ * is what `/chat` and `/voice` receive as `language`, so it must stay one of
+ * the three the API accepts (api/main.py).
  */
 export const LANGUAGES = [
   { code: "en", native: "English", locale: "en-IN" },
+  { code: "hi", native: "हिन्दी", locale: "hi-IN" },
+  { code: "te", native: "తెలుగు", locale: "te-IN" },
 ] as const;
 
 export type LanguageCode = (typeof LANGUAGES)[number]["code"];
@@ -35,7 +40,11 @@ export async function initI18n(): Promise<void> {
   const stored = await AsyncStorage.getItem(STORAGE_KEY).catch(() => null);
   const lng = isLanguageCode(stored) ? stored : deviceLanguage();
   await i18n.use(initReactI18next).init({
-    resources: { en: { translation: en } },
+    resources: {
+      en: { translation: en },
+      hi: { translation: hi },
+      te: { translation: te },
+    },
     lng,
     fallbackLng: "en",
     interpolation: { escapeValue: false },

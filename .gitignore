@@ -74,3 +74,4 @@ playwright-report/
 build-log.txt
 build-release.log
 .vercel
+.playwright-mcp/

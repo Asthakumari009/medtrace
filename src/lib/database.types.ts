@@ -25,6 +25,17 @@ export type ExtractionSource = "cloud" | "on_device_ocr";
 export type TimelineEventType = "report" | "pattern" | "symptom";
 export type ProfileSex = "female" | "male" | "other" | "undisclosed";
 
+/**
+ * One drug as printed on a document, stored in `reports.medications` (jsonb).
+ * Only `name` is guaranteed — real prescriptions routinely omit the rest.
+ */
+export interface Medication {
+  name: string;
+  dose?: string;
+  frequency?: string;
+  duration?: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -66,6 +77,13 @@ export interface Database {
           file_type: ReportFileType;
           status: ReportStatus;
           extraction_source: ExtractionSource;
+          /** Clinician named on the document; null when none is printed. */
+          doctor_name: string | null;
+          /** Hospital, clinic or lab named on the document. */
+          facility_name: string | null;
+          /** Conditions the document states. Never inferred from values. */
+          diagnoses: string[];
+          medications: Medication[];
           error_message: string | null;
           created_at: string;
           updated_at: string;
@@ -79,6 +97,10 @@ export interface Database {
           file_type: ReportFileType;
           status?: ReportStatus;
           extraction_source?: ExtractionSource;
+          doctor_name?: string | null;
+          facility_name?: string | null;
+          diagnoses?: string[];
+          medications?: Medication[];
           error_message?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -92,6 +114,10 @@ export interface Database {
           file_type?: ReportFileType;
           status?: ReportStatus;
           extraction_source?: ExtractionSource;
+          doctor_name?: string | null;
+          facility_name?: string | null;
+          diagnoses?: string[];
+          medications?: Medication[];
           error_message?: string | null;
           created_at?: string;
           updated_at?: string;

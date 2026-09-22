@@ -108,6 +108,7 @@ export function LiveExperience({ children }: { children: ReactNode }) {
         events: timeline.events ?? [],
         pending: timeline.pending ?? [],
         stats: timeline.stats,
+        clinical: timeline.clinical,
         loading: timeline.events === null,
         error: timeline.error,
         refresh: timeline.refresh,

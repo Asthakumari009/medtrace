@@ -39,11 +39,21 @@ export function Records() {
       exp.events.filter((e) => {
         if (filter === "Flagged" && !(exp.stats[e.report_id ?? ""]?.flagged ?? 0))
           return false;
-        return `${e.title} ${e.summary ?? ""} ${e.occurred_at}`
-          .toLowerCase()
-          .includes(query.trim().toLowerCase());
+        // Searching a drug or a condition is how people actually look for a
+        // document ("that antibiotic"), so the haystack is not just the title.
+        const detail = exp.clinical[e.report_id ?? ""];
+        const haystack = [
+          e.title,
+          e.summary ?? "",
+          e.occurred_at,
+          detail?.doctor_name ?? "",
+          detail?.facility_name ?? "",
+          ...(detail?.diagnoses ?? []),
+          ...(detail?.medications ?? []).map((m) => m.name),
+        ].join(" ");
+        return haystack.toLowerCase().includes(query.trim().toLowerCase());
       }),
-    [exp.events, exp.stats, filter, query],
+    [exp.events, exp.stats, exp.clinical, filter, query],
   );
 
   return (

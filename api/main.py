@@ -166,7 +166,22 @@ def _load_grounding(db: Client, user_id: str) -> tuple[list[dict], str]:
     by_report: dict[str, list[dict]] = {}
     for obs in observations:
         by_report.setdefault(obs["report_id"], []).append(obs)
-    return events, build_context(events, by_report)
+    # Doctor, facility, diagnoses and drugs live on the report row, so the
+    # timeline alone cannot answer "which medicine did I take for this".
+    report_ids = [e["report_id"] for e in events if e.get("report_id")]
+    details_by_report: dict[str, dict] = {}
+    if report_ids:
+        details_by_report = {
+            r["id"]: r
+            for r in (
+                db.table("reports")
+                .select("id, doctor_name, facility_name, diagnoses, medications")
+                .eq("user_id", user_id)
+                .in_("id", report_ids)
+                .execute()
+            ).data
+        }
+    return events, build_context(events, by_report, details_by_report)
 
 
 def _validated_citations(events: list[dict], citation_report_ids: list[str]) -> list[Citation]:
@@ -204,8 +219,38 @@ def chat(body: ChatRequest, user_id: str = Depends(_verify_user)) -> ChatRespons
 
 
 _VOICE_MAX_BYTES = 4 * 1024 * 1024  # ~8 min of 64kbps mono AAC; serverless-safe
-_VOICE_MIMES = {"audio/mp4", "audio/m4a", "audio/x-m4a", "audio/aac", "audio/mpeg", "audio/wav"}
+# The native recorder sends AAC in an .m4a container; a browser's MediaRecorder
+# sends webm/Opus or ogg/Opus, so the web build needs those admitted too.
+_VOICE_MIMES = {
+    "audio/mp4",
+    "audio/m4a",
+    "audio/x-m4a",
+    "audio/aac",
+    "audio/mpeg",
+    "audio/wav",
+    "audio/webm",
+    "audio/ogg",
+}
 _history_adapter = TypeAdapter(list[ChatMessage])
+
+
+def _voice_mime(raw: str | None) -> str:
+    """Normalise the upload's content type before it is handed to the model.
+
+    Browsers append codec parameters ("audio/webm;codecs=opus"), so only the
+    bare type is matched. An unsupported type is refused rather than
+    relabelled: telling the model a webm clip is audio/mp4 gives it bytes that
+    do not match the mime, which fails as garbled audio rather than a clear
+    error the caller can act on.
+    """
+    if not raw:
+        # The native recorder does not always set one, and it is always
+        # AAC in an .m4a container.
+        return "audio/mp4"
+    base = raw.split(";", 1)[0].strip().lower()
+    if base not in _VOICE_MIMES:
+        raise HTTPException(status_code=415, detail="Unsupported audio format")
+    return base
 
 
 @app.post("/voice", response_model=VoiceChatResponse)
@@ -230,7 +275,7 @@ async def voice_chat(
         raise HTTPException(status_code=422, detail="Empty audio")
     if len(audio_bytes) > _VOICE_MAX_BYTES:
         raise HTTPException(status_code=413, detail="Audio too long")
-    mime = audio.content_type if audio.content_type in _VOICE_MIMES else "audio/mp4"
+    mime = _voice_mime(audio.content_type)
 
     db = _service_client()
     events, context = _load_grounding(db, user_id)
@@ -346,6 +391,12 @@ def extract(body: ExtractRequest, user_id: str = Depends(_verify_user)) -> Extra
                 "title": result.report_title,
                 "report_date": result.report_date.isoformat() if result.report_date else None,
                 "extraction_source": source,
+                # Overwritten wholesale, not merged: a retry re-reads the same
+                # document, so last extraction wins and stale drugs never linger.
+                "doctor_name": result.doctor_name,
+                "facility_name": result.facility_name,
+                "diagnoses": result.diagnoses,
+                "medications": [m.model_dump(exclude_none=True) for m in result.medications],
             }
         ).eq("id", body.report_id).execute()
 

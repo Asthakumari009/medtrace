@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import {
+  Languages,
   LogOut,
   MoonStar,
   QrCode,
@@ -11,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, View } from "react-native";
 
 import { ShareSheet } from "@/components/ShareSheet";
+import { currentLanguage, LANGUAGES, setAppLanguage } from "@/i18n";
 import { select } from "@/lib/haptics";
 import { onDeviceOcrAvailable } from "@/lib/ocr";
 import { displayName } from "@/lib/user";
@@ -38,6 +40,7 @@ export default function ProfileScreen() {
   const { session, signOut } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [lang, setLang] = useState(currentLanguage());
 
   const email = session?.user.email ?? "—";
   const name = displayName(session) ?? "You";
@@ -176,6 +179,54 @@ export default function ProfileScreen() {
                       style={{ color: selected ? colors.bg : colors.inkSoft }}
                     >
                       {label}
+                    </Text>
+                  </PressableScale>
+                );
+              })}
+            </View>
+            <View style={{ height: 1, backgroundColor: colors.hairline }} />
+            <Row
+              icon={<Languages size={18} strokeWidth={1.7} color={colors.ink} />}
+              title={t("profile.language")}
+              subtitle={t("profile.languageSub")}
+            />
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 8,
+                paddingHorizontal: 16,
+                paddingBottom: 14,
+              }}
+            >
+              {LANGUAGES.map((choice) => {
+                const selected = lang === choice.code;
+                return (
+                  <PressableScale
+                    key={choice.code}
+                    haptic={false}
+                    accessibilityLabel={choice.native}
+                    accessibilityState={{ selected }}
+                    onPress={() => {
+                      select();
+                      setLang(choice.code);
+                      void setAppLanguage(choice.code);
+                    }}
+                    style={{
+                      flex: 1,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      paddingVertical: 10,
+                      borderRadius: radius.pill,
+                      borderWidth: 1,
+                      borderColor: selected ? colors.ink : colors.hairline,
+                      backgroundColor: selected ? colors.ink : "transparent",
+                    }}
+                  >
+                    <Text
+                      variant="label"
+                      style={{ color: selected ? colors.bg : colors.inkSoft }}
+                    >
+                      {choice.native}
                     </Text>
                   </PressableScale>
                 );

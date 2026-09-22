@@ -39,12 +39,29 @@
     if (className) el.className = className;
     return el;
   }
+  function byline(report) {
+    const who = [report.doctor_name, report.facility_name].filter(Boolean).join(" · ");
+    const when = report.report_date || "Report date not recorded";
+    return who ? `${when} · ${who}` : when;
+  }
   function display(data) {
     $("patient").textContent = data.patient_name || "Patient records";
     $("meta").textContent = `${data.reports.length} selected report${data.reports.length === 1 ? "" : "s"} · Shared for ${data.recipient_label}`;
     for (const report of data.reports) {
       const article = text("article", "", "report");
-      article.append(text("h2", report.title), text("p", report.report_date || "Report date not recorded"));
+      article.append(text("h2", report.title), text("p", byline(report)));
+      // Conditions and drugs come before the numbers: it is what a clinician
+      // scans for first. Everything goes in via textContent -- this is OCR'd
+      // text off a patient's document and is never trusted as markup.
+      for (const name of report.diagnoses || []) {
+        article.append(text("div", name, "diagnosis"));
+      }
+      for (const med of report.medications || []) {
+        const row = text("div", "", "medication");
+        const detail = [med.dose, med.frequency, med.duration].filter(Boolean).join(" · ");
+        row.append(text("div", med.name, "name"), text("div", detail || "No dose recorded", "range"));
+        article.append(row);
+      }
       for (const obs of report.observations) {
         const row = text("div", "", "observation");
         const name = text("div", obs.test_name, "name");
@@ -54,7 +71,8 @@
         row.append(name, value, text("div", `Reference: ${obs.reference_range || "Not provided"}`, "range"));
         article.append(row);
       }
-      if (!report.observations.length) article.append(text("p", "No extracted values. Review the original with the patient."));
+      if (!report.observations.length && !(report.medications || []).length && !(report.diagnoses || []).length)
+        article.append(text("p", "No extracted values. Review the original with the patient."));
       $("reports").append(article);
     }
   }

@@ -64,6 +64,33 @@ class ExtractedObservation(BaseModel):
             return None
 
 
+class Medication(BaseModel):
+    """One drug as it is written on a prescription or discharge summary.
+
+    Only `name` is required: plenty of real prescriptions omit the duration,
+    and a missing field must not cost us the whole extraction.
+    """
+
+    name: str = Field(min_length=1, max_length=200)
+    dose: Optional[str] = Field(
+        default=None, max_length=100, description="Strength per administration, e.g. '500 mg'"
+    )
+    frequency: Optional[str] = Field(
+        default=None, max_length=100, description="How often, e.g. 'twice daily' or '1-0-1'"
+    )
+    duration: Optional[str] = Field(
+        default=None, max_length=100, description="How long, e.g. '5 days'"
+    )
+
+    @field_validator("name")
+    @classmethod
+    def strip_name(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("must not be blank")
+        return v
+
+
 class ChatAnswer(BaseModel):
     """Structured output schema enforced on the chat Gemini response."""
 
@@ -101,7 +128,12 @@ class ExtractionResult(BaseModel):
     report_title: str = Field(
         min_length=1,
         max_length=120,
-        description="Short human title, e.g. 'Complete Blood Count' or 'Lipid Profile'",
+        description=(
+            "Short specific title naming what this document is, e.g. 'Complete "
+            "Blood Count', 'Lipid Profile', 'Diabetes follow-up prescription', "
+            "'Discharge summary - appendectomy'. Never a generic label like "
+            "'Medical Report' or 'Prescription' on its own."
+        ),
     )
     report_date: Optional[dt.date] = Field(
         default=None, description="Primary date of the report, if present"
@@ -115,3 +147,38 @@ class ExtractionResult(BaseModel):
         ),
     )
     observations: list[ExtractedObservation] = Field(default_factory=list, max_length=200)
+    doctor_name: Optional[str] = Field(
+        default=None,
+        max_length=200,
+        description="Clinician named on the document. Null if none is printed.",
+    )
+    facility_name: Optional[str] = Field(
+        default=None,
+        max_length=200,
+        description="Hospital, clinic or lab named on the document. Null if none is printed.",
+    )
+    diagnoses: list[str] = Field(
+        default_factory=list,
+        max_length=20,
+        description=(
+            "Conditions stated on the document, verbatim. Never infer a diagnosis "
+            "from test values — if the document does not name it, omit it."
+        ),
+    )
+    medications: list[Medication] = Field(
+        default_factory=list,
+        max_length=50,
+        description="Drugs prescribed or listed on the document, exactly as printed.",
+    )
+
+    @field_validator("diagnoses")
+    @classmethod
+    def clean_diagnoses(cls, v: list[str]) -> list[str]:
+        """Drop blanks and bound each entry; a stray empty string must not
+        reach the database as a real condition."""
+        out = []
+        for item in v:
+            item = item.strip()
+            if item:
+                out.append(item[:200])
+        return out

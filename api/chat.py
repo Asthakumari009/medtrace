@@ -34,9 +34,11 @@ Rules — all of them are hard requirements:
   Use the exact ids from the records. If you used none, return an empty list.
 - If asked something unrelated to the user's health records, politely steer
   back to their health data.
-- WEARABLE DATA and PATTERN entries are the user's own daily summaries and
-  baselines. Compare only against their personal baseline — never population
-  averages — and use them to answer "why do I feel…" questions factually.
+- MEDICATION lines are drugs printed on the user's own documents, not a
+  current prescription. Report what a document listed and when; never tell
+  the user to start, stop, or change a dose.
+- DIAGNOSIS lines are conditions a document states. Treat them as the
+  document's words, not your conclusion.
 
 The user's health records:
 
@@ -63,9 +65,29 @@ _LANGUAGE_RULES = {
 }
 
 
+def _detail_lines(detail: dict) -> list[str]:
+    """Render a report's clinical detail — clinician, facility, diagnoses and
+    drugs. Every part is optional: most lab reports carry none of it."""
+    lines: list[str] = []
+    if detail.get("doctor_name"):
+        lines.append(f"  doctor: {detail['doctor_name']}")
+    if detail.get("facility_name"):
+        lines.append(f"  facility: {detail['facility_name']}")
+    for name in detail.get("diagnoses") or []:
+        lines.append(f"  DIAGNOSIS stated: {name}")
+    for med in detail.get("medications") or []:
+        parts = [str(med.get("name", "")).strip()]
+        for key in ("dose", "frequency", "duration"):
+            if med.get(key):
+                parts.append(str(med[key]))
+        lines.append("  MEDICATION: " + ", ".join(p for p in parts if p))
+    return lines
+
+
 def build_context(
     events: list[dict],
     observations_by_report: dict[str, list[dict]],
+    details_by_report: dict[str, dict] | None = None,
 ) -> str:
     """Render the user's report timeline as grounding."""
     blocks: list[str] = []
@@ -88,6 +110,7 @@ def build_context(
         ]
         if event.get("summary"):
             lines.append(f"  summary: {event['summary']}")
+        lines.extend(_detail_lines((details_by_report or {}).get(report_id or "", {})))
         for obs in observations_by_report.get(report_id or "", []):
             unit = f" {obs['unit']}" if obs.get("unit") else ""
             ref = f" (ref {obs['reference_range']})" if obs.get("reference_range") else ""

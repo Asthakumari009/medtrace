@@ -1,6 +1,8 @@
 """Trust-boundary tests for the two extraction paths. No model is called."""
 import unittest
+from unittest import mock
 
+import extraction
 from extraction import _MAX_TEXT_CHARS, extract_from_text, wire_schema
 from schemas import ExtractionResult
 
@@ -23,11 +25,23 @@ class TextBoundaryTests(unittest.TestCase):
         self.assertIn(str(_MAX_TEXT_CHARS), str(caught.exception))
 
     def test_text_at_the_limit_passes_the_boundary(self):
-        # Reaching the model is the failure we want here: it proves the guard
-        # let the input through rather than rejecting it as too long.
-        with self.assertRaises(Exception) as caught:
+        # Text exactly at the limit must reach the model, not be rejected.
+        #
+        # This used to assert "some exception happens", relying on the Gemini
+        # call failing for want of credentials. That made the result depend on
+        # whether anything else in the suite had loaded api/.env first, and
+        # when something did, the test spent a real API call to find out.
+        # Stubbing the one function that talks to Vertex tests the guard
+        # itself and never leaves the process.
+        with mock.patch.object(extraction, "_generate") as generate:
             extract_from_text("5.8 %" + "x" * (_MAX_TEXT_CHARS - 5))
-        self.assertNotIsInstance(caught.exception, ValueError)
+        self.assertEqual(generate.call_count, 1)
+
+    def test_text_over_the_limit_never_reaches_the_model(self):
+        with mock.patch.object(extraction, "_generate") as generate:
+            with self.assertRaises(ValueError):
+                extract_from_text("9" * (_MAX_TEXT_CHARS + 1))
+        generate.assert_not_called()
 
 
 class WireSchemaTests(unittest.TestCase):

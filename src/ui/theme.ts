@@ -1,4 +1,10 @@
-import { Easing, Platform, type TextStyle, type ViewStyle } from "react-native";
+import { Platform, type TextStyle, type ViewStyle } from "react-native";
+// Reanimated's Easing, NOT react-native's. React Native's bezier is a plain JS
+// function, so withTiming calling it from the UI runtime is a remote call and
+// the release build dies with "Tried to synchronously call a Remote Function".
+// Dev builds hide this: with the debugger attached worklets run on the JS
+// thread, where the call is legal.
+import { Easing } from "react-native-reanimated";
 
 /**
  * MedTrace design tokens v4 — "Record".

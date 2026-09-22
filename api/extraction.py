@@ -18,9 +18,22 @@ report). Rules:
   or correct values. If a value is illegible, skip it.
 - Set flagged=true ONLY when the report itself marks a value as abnormal
   (H/L markers, asterisks, bold out-of-range, "high"/"low" notes).
-- Dates in ISO format (YYYY-MM-DD). Omit dates you cannot read.
+- Dates in ISO format (YYYY-MM-DD). Indian documents usually write
+  DD/MM/YYYY — read them that way. Omit dates you cannot read.
+- report_title names this specific document so it is recognisable in a list
+  of many. Prefer the panel or the reason for the visit ("Lipid Profile",
+  "Diabetes follow-up prescription"). Never return a bare "Medical Report".
 - The summary must neutrally describe what the report contains. Do NOT
   diagnose, interpret, or give medical advice anywhere in the output.
+- Record the clinician in doctor_name and the hospital/clinic/lab in
+  facility_name, exactly as printed. Null if the document does not name one.
+  A letterhead counts; a pre-printed form's publisher does not.
+- Put every drug listed or prescribed into medications, with the dose,
+  frequency and duration as printed. Indian prescriptions often write
+  frequency as "1-0-1" — copy that, do not translate it.
+- Put conditions the document *states* into diagnoses, verbatim. Never infer
+  one from a test value: an out-of-range glucose is not "diabetes" unless the
+  document says so. Leave the list empty rather than guess.
 - If the document is not a medical report, return an empty observations list
   and say so in the summary.
 """

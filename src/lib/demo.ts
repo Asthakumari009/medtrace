@@ -1,4 +1,5 @@
 import type { HealthData } from "@/components/health/Experience";
+import type { ReportClinical } from "@/hooks/useTimeline";
 
 import type {
   ObservationRow,
@@ -11,6 +12,26 @@ function dayOffset(back: number): string {
   date.setDate(date.getDate() - back);
   return date.toISOString().slice(0, 10);
 }
+
+/** One source for both the searchable timeline and the report screen:
+ *  the sample must not claim a drug the sample report screen never shows. */
+const DEMO_CLINICAL = {
+    "sample-report-1": {
+      doctor_name: "Dr. Meera Iyer",
+      facility_name: "Lakeside Family Clinic",
+      diagnoses: ["Prediabetes"],
+      medications: [
+        { name: "Metformin", dose: "500 mg", frequency: "1-0-1", duration: "3 months" },
+        { name: "Vitamin D3", dose: "60,000 IU", frequency: "Once weekly", duration: "8 weeks" },
+      ],
+    },
+    "sample-report-2": {
+      doctor_name: null,
+      facility_name: "Sunrise Diagnostics",
+      diagnoses: [],
+      medications: [],
+    },
+} satisfies Record<string, ReportClinical>;
 
 /** Explicitly illustrative, never loaded into an authenticated user's records. */
 export function demoHealthData(): HealthData {
@@ -48,6 +69,7 @@ export function demoHealthData(): HealthData {
       "sample-report-1": { count: 12, flagged: 1 },
       "sample-report-2": { count: 8, flagged: 0 },
     },
+    clinical: DEMO_CLINICAL,
     loading: false,
     error: null,
     refresh: async () => {},
@@ -124,6 +146,11 @@ export function demoReport(id: string): {
       file_type: "pdf",
       status: "processed",
       extraction_source: "cloud",
+      // A lab report names the lab and nothing else; the annual check-up is a
+      // consultation note, so it carries the clinician, the stated condition
+      // and what was prescribed. Both shapes are what real documents look like.
+      ...(DEMO_CLINICAL[id as keyof typeof DEMO_CLINICAL] ??
+        DEMO_CLINICAL["sample-report-1"]),
       error_message: null,
       created_at: day,
       updated_at: day,

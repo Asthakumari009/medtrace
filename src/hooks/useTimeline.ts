@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { type ReportRow, type TimelineEventRow } from "@/lib/database.types";
+import {
+  type Medication,
+  type ReportRow,
+  type TimelineEventRow,
+} from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -11,6 +15,14 @@ export interface ObservationStats {
   flagged: number;
 }
 
+/** Clinical detail that lives on the report row, not on its timeline event. */
+export interface ReportClinical {
+  doctor_name: string | null;
+  facility_name: string | null;
+  diagnoses: string[];
+  medications: Medication[];
+}
+
 interface UseTimelineResult {
   /** Processed reports as chronological events, newest first. */
   events: TimelineEventRow[] | null;
@@ -18,6 +30,8 @@ interface UseTimelineResult {
   pending: ReportRow[] | null;
   /** Per-report observation totals, keyed by report id. */
   stats: Record<string, ObservationStats>;
+  /** Per-report clinician, facility, conditions and drugs, keyed by report id. */
+  clinical: Record<string, ReportClinical>;
   error: string | null;
   refresh: () => Promise<void>;
 }
@@ -33,6 +47,7 @@ export function useTimeline(): UseTimelineResult {
   const [events, setEvents] = useState<TimelineEventRow[] | null>(null);
   const [pending, setPending] = useState<ReportRow[] | null>(null);
   const [stats, setStats] = useState<Record<string, ObservationStats>>({});
+  const [clinical, setClinical] = useState<Record<string, ReportClinical>>({});
   const [error, setError] = useState<string | null>(null);
 
   const inFlight = useRef<Promise<void> | null>(null);
@@ -41,7 +56,7 @@ export function useTimeline(): UseTimelineResult {
     if (!session) return Promise.resolve();
     const load = async () => {
       try {
-        const [eventResult, pendingResult, observationResult] =
+        const [eventResult, pendingResult, observationResult, clinicalResult] =
           await Promise.all([
             supabase
               .from("timeline_events")
@@ -59,9 +74,19 @@ export function useTimeline(): UseTimelineResult {
               .from("extracted_observations")
               .select("report_id, flagged")
               .eq("user_id", session.user.id),
+            // Conditions and drugs are on the report, so the timeline alone
+            // cannot show or search them.
+            supabase
+              .from("reports")
+              .select("id, doctor_name, facility_name, diagnoses, medications")
+              .eq("user_id", session.user.id)
+              .eq("status", "processed"),
           ]);
         const failure =
-          eventResult.error ?? pendingResult.error ?? observationResult.error;
+          eventResult.error ??
+          pendingResult.error ??
+          observationResult.error ??
+          clinicalResult.error;
         if (failure) {
           setError(failure.message);
           return;
@@ -72,6 +97,12 @@ export function useTimeline(): UseTimelineResult {
           entry.count++;
           if (row.flagged) entry.flagged++;
         }
+        const detail: Record<string, ReportClinical> = {};
+        for (const row of clinicalResult.data ?? []) {
+          const { id, ...rest } = row;
+          detail[id] = rest;
+        }
+        setClinical(detail);
         setEvents(eventResult.data ?? []);
         setPending(pendingResult.data ?? []);
         setStats(next);
@@ -99,5 +130,5 @@ export function useTimeline(): UseTimelineResult {
     return () => clearInterval(timer);
   }, [pending, refresh]);
 
-  return { events, pending, stats, error, refresh };
+  return { events, pending, stats, clinical, error, refresh };
 }

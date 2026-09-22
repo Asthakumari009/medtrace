@@ -71,7 +71,8 @@
     "dev:device": "expo start --dev-client",
     "logs:device": "adb logcat -s ReactNativeJS:V ReactNative:V",
     "perf:device": "adb shell dumpsys gfxinfo com.vita.health framestats",
-    "shot:device": "adb exec-out screencap -p > artifacts/device-shot.png"
+    "shot:device": "adb exec-out screencap -p > artifacts/device-shot.png",
+    "check:deploy": "node scripts/check-deploy.cjs"
   },
   "private": true
 }

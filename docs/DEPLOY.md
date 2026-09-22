@@ -96,6 +96,19 @@ preview-only setting — do not point the app at one.
 ## 5. Verify
 
 ```
+npm run check:deploy https://<your-url>
+```
+
+Six checks, all of which cover something that fails *quietly*: the protection wall, the
+two `/health` config booleans, the web export actually being served at `/`, a bundle
+built without `EXPO_PUBLIC_API_URL` (it silently falls back to `localhost:8000`),
+`/extract` rejecting an unauthenticated POST with a real FastAPI body, and the doctor
+page's assets being in the function bundle. Exits non-zero on any failure and prints no
+configuration values.
+
+Or by hand:
+
+```
 curl -s https://<your-url>/health
 ```
 

@@ -254,7 +254,7 @@ export function ShareSheet({
           <>
             <Input
               accessibilityLabel="Recipient label"
-              placeholder="Clinician or appointment label (optional)"
+              placeholder="Clinician or visit (optional)"
               value={recipient}
               onChangeText={setRecipient}
               maxLength={100}
@@ -277,10 +277,19 @@ export function ShareSheet({
                     justifyContent: "center",
                     borderRadius: 12,
                     backgroundColor:
-                      duration === minutes ? colors.fill : colors.fill,
+                      duration === minutes ? colors.surfaceHi : colors.fill,
                   }}
                 >
-                  <Text variant="caption">{minutes} min</Text>
+                  <Text
+                    variant="caption"
+                    style={
+                      duration === minutes
+                        ? { color: colors.onSurfaceHi }
+                        : undefined
+                    }
+                  >
+                    {minutes} min
+                  </Text>
                 </PressableScale>
               ))}
             </View>

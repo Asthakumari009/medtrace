@@ -313,3 +313,7 @@ node scripts/render-brand.cjs
 MedTrace organises and explains medical documents. It is **not** a medical device
 and does not provide diagnosis or treatment advice. Always consult a qualified
 clinician.
+
+## License
+
+[MIT](LICENSE) © 2026 Syed Saad Ur Rahman

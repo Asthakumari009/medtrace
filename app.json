@@ -2,7 +2,7 @@
   "expo": {
     "name": "MedTrace",
     "slug": "vita",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "scheme": "vita",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.vita.health",
-      "versionCode": 1,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#0A0B0A",
         "foregroundImage": "./assets/android-icon-foreground.png",

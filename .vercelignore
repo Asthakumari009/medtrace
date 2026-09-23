@@ -26,3 +26,7 @@
 /sup
 /build-log.txt
 /build-release.log
+
+# Local-only: pitch decks and browser-automation logs.
+*.pptx
+/.playwright-mcp

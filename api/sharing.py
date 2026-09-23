@@ -12,7 +12,9 @@ from pydantic import BaseModel, Field
 NO_STORE = {'Cache-Control': 'no-store, private, max-age=0', 'Pragma': 'no-cache',
             'Expires': '0', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff',
             'X-Frame-Options': 'DENY'}
-LEASE_MS = 900
+# How long a doctor view may keep showing records without a successful check.
+# Revocation does not wait for this: the next 1s poll gets a 410 and locks.
+LEASE_MS = 10_000
 
 
 def _assets_dir() -> Path:

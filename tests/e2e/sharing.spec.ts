@@ -53,7 +53,7 @@ async function doctor(page: Page) {
         .fulfill(
           revokedAtRead
             ? { status: 410, json: { detail: "revoked" } }
-            : { json: { active: true, lease_ms: 900 } },
+            : { json: { active: true, lease_ms: 10_000 } },
         )
         .catch(() => {});
       return;
@@ -95,7 +95,17 @@ async function doctor(page: Page) {
   return state;
 }
 
-test("an already-open doctor view clears within one second of revocation", async ({
+test("an already-open doctor view stays open across slow production checks", async ({
+  page,
+}) => {
+  // Production /share/session takes 0.5-1s warm, 3s+ cold. A view must survive that.
+  const state = await doctor(page);
+  state.delay = 1500;
+  await page.waitForTimeout(5000);
+  expect(state.sessions).toBeGreaterThan(1);
+  await expect(page.getByText("Synthetic marker")).toBeVisible();
+});
+test("an already-open doctor view clears within seconds of revocation", async ({
   page,
 }) => {
   const state = await doctor(page);
@@ -103,8 +113,8 @@ test("an already-open doctor view clears within one second of revocation", async
   expect(new URL(page.url()).pathname).toBe("/share/view");
   const start = Date.now();
   state.revoked = true;
-  await expect(page.locator("#reports")).toBeEmpty({ timeout: 1100 });
-  expect(Date.now() - start).toBeLessThan(1100);
+  await expect(page.locator("#reports")).toBeEmpty({ timeout: 2500 });
+  expect(Date.now() - start).toBeLessThan(2500);
   await expect(page.locator("#patient")).toBeEmpty();
   await expect(page.getByText("This view is locked.")).toBeVisible();
   await expect(page.getByText("Synthetic marker")).toHaveCount(0);
@@ -118,7 +128,7 @@ test("network loss expires the display lease and removes medical text", async ({
 }) => {
   const state = await doctor(page);
   state.stall = true;
-  await expect(page.locator("#reports")).toBeEmpty({ timeout: 1200 });
+  await expect(page.locator("#reports")).toBeEmpty({ timeout: 3500 });
   await expect(page.locator("#patient")).toBeEmpty();
 });
 test("a delayed pre-revocation response cannot restore cleared records", async ({
@@ -128,8 +138,8 @@ test("a delayed pre-revocation response cannot restore cleared records", async (
   state.delay = 1100;
   await expect.poll(() => state.sessions).toBeGreaterThan(1);
   state.revoked = true;
-  await expect(page.locator("#reports")).toBeEmpty({ timeout: 1200 });
-  await page.waitForTimeout(1300);
+  await expect(page.locator("#reports")).toBeEmpty({ timeout: 4500 });
+  await page.waitForTimeout(2500);
   await expect(page.locator("#reports")).toBeEmpty();
   await expect(page.locator("#records")).toBeHidden();
 });

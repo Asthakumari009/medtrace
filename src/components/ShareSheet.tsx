@@ -168,7 +168,7 @@ export function ShareSheet({
         ),
       );
       setNotice(
-        "Access revoked. Connected doctor views lock within about a second. Saved copies cannot be recalled.",
+        "Access revoked. Connected doctor views lock within a few seconds. Saved copies cannot be recalled.",
       );
     });
   const active = history.filter(

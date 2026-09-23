@@ -23,15 +23,23 @@
     open.disabled = false;
     open.textContent = "Verify access and resume";
   }
-  async function post(path, body, timeout = 650) {
+  // Production round trips (Vercel function + Supabase) measure 0.5-1s warm and
+  // 3s+ cold. The old 650ms timeout / 900ms lease locked every live view within
+  // a second or two of opening it -- the "access revokes itself" bug. Revocation
+  // still locks on the next check (POLL_MS + one round trip); only a dropped
+  // connection waits out the lease.
+  const POLL_MS = 1000, CHECK_TIMEOUT_MS = 6000, MAX_LEASE_MS = 15000;
+  const LOST = "Connection lost. Records have been cleared. Ask the patient for a new share.";
+  async function post(path, body, timeout = CHECK_TIMEOUT_MS) {
     const controller = new AbortController();
     const cancel = setTimeout(() => controller.abort(), timeout);
+    let r;
     try {
-      const r = await fetch(path, { method: "POST", cache: "no-store", credentials: "omit",
+      r = await fetch(path, { method: "POST", cache: "no-store", credentials: "omit",
         headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: controller.signal });
-      if (!r.ok) throw new Error(r.status === 410 ? "Access was revoked, replaced, used, or has expired. Ask the patient for a new share." : "Access could not be verified. Ask the patient for a new share.");
-      return await r.json();
-    } finally { clearTimeout(cancel); }
+    } catch { throw new Error(LOST); } finally { clearTimeout(cancel); }
+    if (!r.ok) throw new Error(r.status === 410 ? "Access was revoked, replaced, used, or has expired. Ask the patient for a new share." : "Access could not be verified. Ask the patient for a new share.");
+    return await r.json();
   }
   function text(tag, value, className) {
     const el = document.createElement(tag);
@@ -82,12 +90,12 @@
     if (epoch !== generation || document.hidden) return false;
     // Anchor the lease to request START. A delayed pre-revocation response
     // cannot extend access for another full lease after it arrives.
-    const lease = Math.min(900, Number(result.lease_ms));
+    const lease = Math.min(MAX_LEASE_MS, Number(result.lease_ms));
     const remaining = start + lease - performance.now();
     if (result.active !== true || !Number.isFinite(remaining) || remaining <= 0) throw new Error("The access check took too long. Ask the patient for a new share.");
     deadline = start + lease;
     clearTimeout(watchdog);
-    watchdog = setTimeout(() => stop("Connection lost. Records have been cleared. Ask the patient for a new share."), remaining);
+    watchdog = setTimeout(() => stop(LOST), remaining);
     stripe = !stripe;
     records.style.animationDuration = `${remaining}ms`;
     records.className = `leased lease-${stripe ? "a" : "b"}`;
@@ -95,9 +103,9 @@
   }
   async function poll(epoch) {
     try {
-      if (await renew(epoch)) timer = setTimeout(() => poll(epoch), 220);
+      if (await renew(epoch)) timer = setTimeout(() => poll(epoch), POLL_MS);
     } catch (e) {
-      if (epoch === generation) stop(e.name === "AbortError" ? "Connection lost. Records have been cleared. Ask the patient for a new share." : e.message);
+      if (epoch === generation) stop(e.message);
     }
   }
   open.addEventListener("click", async () => {
@@ -119,9 +127,9 @@
       display(data); data = null;
       if (performance.now() >= deadline) throw new Error("Access verification timed out. Ask the patient for a new share.");
       records.hidden = false; gate.hidden = true; busy = false;
-      timer = setTimeout(() => poll(epoch), 220);
+      timer = setTimeout(() => poll(epoch), POLL_MS);
     } catch (e) {
-      if (epoch === generation) stop(e.name === "AbortError" ? "Connection lost. Records have been cleared. Ask the patient for a new share." : e.message);
+      if (epoch === generation) stop(e.message);
     }
   });
   $("close").addEventListener("click", () => stop("You ended this view. Ask the patient for a new share to open it again."));

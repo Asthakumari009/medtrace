@@ -14,3 +14,4 @@ export { Toggle, type ToggleProps } from "./Toggle";
 export { RangeBar, parseReferenceRange, type RangeBarProps } from "./RangeBar";
 export { Row, type RowProps } from "./Row";
 export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
+export { BrandMark } from "./BrandMark";

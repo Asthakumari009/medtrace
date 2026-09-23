@@ -2,7 +2,7 @@ import "react-native-url-polyfill/auto";
 
 import { privateStorage } from "./privateStorage";
 import { createClient } from "@supabase/supabase-js";
-import { AppState } from "react-native";
+import { AppState, Platform } from "react-native";
 
 import { type Database } from "./database.types";
 
@@ -22,7 +22,10 @@ export const supabase = createClient<Database>(url, anonKey, {
     storage: privateStorage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    // Web Google sign-in returns here with ?code=… (googleAuth.web.ts).
+    // Native never receives an OAuth redirect, so it keeps this off.
+    detectSessionInUrl: Platform.OS === "web",
+    flowType: Platform.OS === "web" ? "pkce" : "implicit",
   },
 });
 

@@ -10,7 +10,7 @@ import { Text } from "./Text";
 import { radius } from "./theme";
 import { useTheme } from "./ThemeContext";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "inverse" | "ghost";
 type ButtonSize = "md" | "sm";
 
 export interface ButtonProps
@@ -27,7 +27,9 @@ const heightBySize: Record<ButtonSize, number> = { md: 52, sm: 44 };
 
 /**
  * Primary: the acid-lime pill with near-black text — the one loud element on
- * a screen. Secondary: surface + hairline. Ghost: bare accent label.
+ * a screen. Secondary: surface + hairline. Inverse: the surfaceHi panel
+ * colour (white on dark, near-black on light), for third-party sign-in buttons
+ * that must not borrow the accent. Ghost: bare accent label.
  * Flat fills only, so there is nothing to composite per frame.
  */
 export function Button({
@@ -43,12 +45,24 @@ export function Button({
   const { colors } = useTheme();
   const isDisabled = disabled === true || loading;
   const labelTone =
-    variant === "primary" ? "onAccent" : variant === "ghost" ? "accent" : "ink";
+    variant === "primary"
+      ? "onAccent"
+      : variant === "ghost"
+        ? "accent"
+        : variant === "inverse"
+          ? "onSurfaceHi"
+          : "ink";
 
   const inner = loading ? (
     <ActivityIndicator
       size="small"
-      color={variant === "primary" ? colors.onAccent : colors.ink}
+      color={
+        variant === "primary"
+          ? colors.onAccent
+          : variant === "inverse"
+            ? colors.onSurfaceHi
+            : colors.ink
+      }
     />
   ) : (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -79,6 +93,7 @@ export function Button({
           opacity: isDisabled && !loading ? 0.4 : 1,
         },
         variant === "primary" ? { backgroundColor: colors.accent } : null,
+        variant === "inverse" ? { backgroundColor: colors.surfaceHi } : null,
         variant === "secondary"
           ? {
               backgroundColor: colors.surface,

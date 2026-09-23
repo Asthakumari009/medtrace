@@ -169,7 +169,6 @@ export default function WelcomeScreen() {
             disabled={googleBusy}
           />
           <PressableScale
-            accessibilityRole="link"
             accessibilityLabel="Explore the MedTrace preview"
             onPress={() => router.push("/preview")}
             style={{

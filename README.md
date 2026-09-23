@@ -47,7 +47,7 @@ view of exactly the reports you choose.
 | **Report reader** | Every extracted value against its reference range, comparisons with earlier reports, and MedlinePlus context for each test. |
 | **Grounded chat** | Ask about your records by text or voice. Answers are grounded in your own extracted documents, not general web knowledge. |
 | **Doctor sharing** | Pick reports, a recipient label and a 5/15/30-minute window. The doctor scans a one-time QR and gets a live, read-only view that locks as soon as you revoke it. |
-| **Sign-in** | Native Google Sign-In (ID-token flow, no redirects) and email one-time codes, both through Supabase Auth. |
+| **Sign-in** | Google (a native ID-token flow on Android, the OAuth redirect on the web) and email one-time codes, all through Supabase Auth. |
 | **Local privacy** | Session and cached data are encrypted at rest on the device. Android backup is disabled. |
 | **Languages** | English, Hindi and Telugu. |
 
